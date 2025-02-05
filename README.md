@@ -39,7 +39,7 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
    git clone https://github.com/your_username/LUPE-2.0-App.git
    cd LUPE-2.0-App
    
-2. #### Download the LUPE 2.0 A-SOiD Model [HERE](https://upenn.box.com/s/vkdbktwn5krrinalyujapo7htg2ok5rc) and move the contents of the folder into the 'Model' folder.
+2. #### Download the LUPE 2.0 A-SOiD Model [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the 'Model' folder.
     > **Note**: Find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) for analyzing pose estimation for LUPE video data.
     
 3.	**Create the Conda Environment**
