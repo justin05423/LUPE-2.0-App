@@ -14,9 +14,9 @@ Try LUPE today and unlock a new level of insights into animal behavior.
 ---
 
 # System Requirements
-LUPE-2.0 Analysis Package requires only a standard computer with enough RAM to support the coding notebooks. 
+The LUPE-2.0 App requires only a standard computer with enough RAM to support streamlit data analysis and output. 
 
-DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> used to create LUPE-2.0 model for pose estimation and behavior classification, respectively. Refer to GitHub of [DLC](https://github.com/DeepLabCut) or [A-SOiD](https://github.com/YttriLab/A-SOID) for further details. 
+DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 model for pose estimation and behavior classification, respectively. Refer to GitHub of [DLC](https://github.com/DeepLabCut) or [A-SOiD](https://github.com/YttriLab/A-SOID) for further details. 
 
 #### OS Requirements
 - This package is supported for *Windows* and *Mac* but can be run on *Linux* computers given additional installation of require packages.
