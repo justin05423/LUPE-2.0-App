@@ -9,7 +9,7 @@ from PIL import Image
 import pickle
 import importlib
 from app_pages import analysis, behavior_analysis
-from utils.preprocess_step1 import preprocess_data_step1
+from utils.preprocess_step1 import preprocess_step1
 from utils.preprocess_step2 import preprocess_get_features
 from utils.preprocess_step3 import preprocess_get_behaviors
 from utils.analysis_scripts.behavior_binned_ratio import behavior_binned_ratio_timeline
@@ -201,39 +201,44 @@ with st.sidebar:
             key=f"condition_name_{condition_idx + 1}"
         )
 
-    # File Uploads for Groups and Conditions
+    # Clear any previously stored uploaded files so we can rebuild the dictionary with the updated keys.
+    st.session_state["uploaded_files"] = {}
+
     st.markdown("### Upload Files")
     for group_key, group_name in st.session_state["group_names"].items():
         st.markdown(f"#### {group_name}")
         for condition_name in st.session_state["condition_names"]:
-            condition_key = f"{group_key}_{condition_name}"
-
-            uploaded_files = st.file_uploader(
+            # Use the user-defined group name as the key in the file uploader's session state.
+            uploaded = st.file_uploader(
                 f"Upload Files for {group_name} - {condition_name}:",
                 accept_multiple_files=True,
                 type=["csv"],
-                key=f"file_{group_key}_{condition_name}"
+                key=f"file_{group_name}_{condition_name}"
             )
 
-            if uploaded_files:
-                if group_key not in st.session_state["uploaded_files"]:
-                    st.session_state["uploaded_files"][group_key] = {}
-                st.session_state["uploaded_files"][group_key][condition_name] = uploaded_files
+            if uploaded:
+                # Use the actual group name (user-defined) as the key
+                if group_name not in st.session_state["uploaded_files"]:
+                    st.session_state["uploaded_files"][group_name] = {}
+                st.session_state["uploaded_files"][group_name][condition_name] = uploaded
 
-            if group_key in st.session_state["uploaded_files"] and condition_name in st.session_state["uploaded_files"][group_key]:
+            # If there are uploaded files for this group and condition, show them.
+            if (group_name in st.session_state["uploaded_files"] and
+                    condition_name in st.session_state["uploaded_files"][group_name]):
                 st.markdown("Uploaded Files:")
-                st.dataframe([file.name for file in st.session_state["uploaded_files"][group_key][condition_name]])
+                st.dataframe([file.name for file in st.session_state["uploaded_files"][group_name][condition_name]])
 
-# Preprocessing Workflow
 def preprocess_workflow():
     st.markdown("## Preprocessing Workflow")
 
+    # Input for project name
     project_name = st.text_input("Enter Project Name:", key="project_name")
 
     if not project_name:
         st.warning("Please enter a project name to proceed.")
         return
 
+    # Save project name to session state for analyses
     if not st.session_state.get("current_project") or st.session_state["current_project"] != project_name:
         st.session_state["current_project"] = project_name  # Save the project name
 
@@ -257,17 +262,22 @@ def preprocess_workflow():
     if not raw_data_exists:
         st.markdown("### Step 1: Preprocess Data")
         uploaded_files = st.session_state.get("uploaded_files", {})
+
+        # Debug: Print the uploaded_files dictionary
+        st.write("🔍 DEBUG: Uploaded Files Dictionary")
+        st.write(uploaded_files)
+
         if not uploaded_files:
             st.warning("No files uploaded. Please upload files in the sidebar.")
             return
 
         if st.button("Run Preprocessing Step 1"):
             try:
-                processed_file_path = preprocess_data_step1(
+                processed_file_path = preprocess_step1(
                     project_name,
-                    st.session_state["uploaded_files"],
                     list(st.session_state["group_names"].values()),
                     st.session_state["condition_names"],
+                    uploaded_files
                 )
                 st.success(f"Step 1 completed! Data saved at {processed_file_path}")
                 st.experimental_rerun()
@@ -279,13 +289,12 @@ def preprocess_workflow():
         st.markdown("### Step 2: Extract Features")
         if st.button("Run Preprocessing Step 2"):
             try:
-                features_file_path = preprocess_get_features(
-                    project_name,
-                    list(st.session_state["group_names"].values()),
-                    st.session_state["condition_names"],
-                )
+                features_file_path = preprocess_get_features(project_name)
                 st.success(f"Step 2 completed! Features saved at {features_file_path}")
-                st.experimental_rerun()
+                # Comment out automatic rerun so you can see debug info:
+                # st.experimental_rerun()
+                if st.button("Continue to Step 3"):
+                    st.experimental_rerun()
             except Exception as e:
                 st.error(f"Error in Step 2: {e}")
 
@@ -294,11 +303,8 @@ def preprocess_workflow():
         st.markdown("### Step 3: Predict Behaviors")
         if st.button("Run Preprocessing Step 3"):
             try:
-                behaviors_file_path = preprocess_get_behaviors(
-                    project_name,
-                    list(st.session_state["group_names"].values()),
-                    st.session_state["condition_names"],
-                )
+                # Only pass project_name, since groups and conditions are handled inside preprocess_get_behaviors
+                behaviors_file_path = preprocess_get_behaviors(project_name)
                 st.success(f"Step 3 completed! Behaviors saved at {behaviors_file_path}")
                 st.experimental_rerun()
             except Exception as e:

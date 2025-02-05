@@ -1,21 +1,24 @@
+# utils/preprocess_step1.py
+
 import os
 import pickle
 import numpy as np
 import pandas as pd
-from utils.feature_utils import filter_pose_noise
 from tqdm import tqdm
+from io import StringIO
+from utils.feature_utils import filter_pose_noise
 
 
 def update_meta_file(project_name, groups, conditions):
     """
-    Updates the meta.py file with project-specific groups and conditions.
+    Update the meta.py file with project-specific groups and conditions.
 
     Parameters:
-        project_name (str): The name of the project.
+        project_name (str): Name of the project.
         groups (list): List of group names.
         conditions (list): List of condition names.
     """
-    meta_file_path = './utils/meta.py'
+    meta_file_path = os.path.join(os.path.dirname(__file__), 'meta.py')
 
     groups_var = f"groups_{project_name} = {groups}"
     conditions_var = f"conditions_{project_name} = {conditions}"
@@ -51,61 +54,66 @@ def update_meta_file(project_name, groups, conditions):
     print(f'Updated {meta_file_path} with project-specific groups and conditions.')
 
 
-def preprocess_data_step1(project_name, uploaded_files, groups, conditions):
+def preprocess_step1(project_name, groups, conditions, uploaded_files):
     """
-    Preprocesses uploaded DLC-analyzed CSV data and saves the data dictionary as a pickle file.
+    Preprocess the uploaded CSV files and store the data in a dictionary.
 
     Parameters:
-        project_name (str): The name of the project.
-        uploaded_files (dict): Dictionary of uploaded files grouped by groups and conditions.
+        project_name (str): Name of the project.
         groups (list): List of group names.
         conditions (list): List of condition names.
+        uploaded_files (dict): Dictionary of uploaded files, organized by group and condition.
 
     Returns:
-        str: Path to the saved pickle file.
+        str: Path to the saved raw data file.
     """
-    # Update meta.py with project-specific information
-    update_meta_file(project_name, groups, conditions)
+    print(f"\n🔍 DEBUG: Starting Step 1 for Project: {project_name}\n")
 
-    # Initialize the data structure
+    # Initialize data dictionary
     data = {group: {condition: {} for condition in conditions} for group in groups}
 
-    print("Processing and filtering pose data...")
-    for group in tqdm(groups, desc="Groups"):
-        for condition in tqdm(conditions, desc=f"Conditions in {group}"):
+    # Process each uploaded file
+    for group in tqdm(groups, desc="Processing groups"):
+        for condition in tqdm(conditions, desc=f"Processing conditions in {group}"):
             if group in uploaded_files and condition in uploaded_files[group]:
-                for uploaded_file in tqdm(uploaded_files[group][condition],
-                                          desc=f"Processing files in {group}/{condition}"):
+                for uploaded_file in uploaded_files[group][condition]:
                     try:
-                        # Read CSV file into DataFrame
-                        temp_df = pd.read_csv(uploaded_file, header=[0, 1, 2, 3], sep=",", index_col=0)
+                        # Debug: Print the uploaded file object details
+                        print(f"\n📂 Processing file: {uploaded_file.name} (Size: {uploaded_file.size} bytes)\n")
 
-                        # Extract pose indices and filter pose noise
+                        # Read file contents properly using StringIO
+                        file_content = uploaded_file.getvalue().decode("utf-8")  # Convert bytes to string
+                        file_buffer = StringIO(file_content)  # Convert string to file-like object
+
+                        # Read the CSV file
+                        temp_df = pd.read_csv(file_buffer, header=[0, 1, 2, 3], sep=",", index_col=0)
+
+                        # Debug: Print dataframe shape
+                        print(f"✅ Successfully loaded {uploaded_file.name} | Shape: {temp_df.shape}")
+
+                        # Filter pose noise
                         selected_pose_idx = np.arange(temp_df.shape[1])
                         idx_llh = selected_pose_idx[2::3]
                         idx_selected = [i for i in selected_pose_idx if i not in idx_llh]
+                        currdf_filt, _ = filter_pose_noise(temp_df, idx_selected=idx_selected, idx_llh=idx_llh,
+                                                           llh_value=0.1)
 
-                        currdf_filt, _ = filter_pose_noise(
-                            temp_df,
-                            idx_selected=idx_selected,
-                            idx_llh=idx_llh,
-                            llh_value=0.1
-                        )
-
-                        # Save filtered data into the dictionary
-                        file_name = uploaded_file.name
+                        # Store the filtered data in dictionary
+                        file_name = os.path.splitext(uploaded_file.name)[0]  # Extract file name
                         data[group][condition][file_name] = currdf_filt
 
-                    except Exception as e:
-                        print(f"Error processing file {uploaded_file.name}: {e}")
-                        raise ValueError(f"Failed to process file: {uploaded_file.name}")
+                        print(f"✅ Processed & stored: {file_name} under [{group} -> {condition}]")
 
-    # Save the data dictionary to a pickle file
-    output_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
-    os.makedirs(output_dir, exist_ok=True)
-    output_file_path = os.path.join(output_dir, f"raw_data_{project_name}.pkl")
-    with open(output_file_path, 'wb') as f:
+                    except Exception as e:
+                        print(f"🚨 Error processing file {uploaded_file.name}: {e}")
+
+    # Save the processed data as a .pkl file
+    directory = f"./LUPEAPP_processed_dataset/{project_name}/"
+    os.makedirs(directory, exist_ok=True)
+
+    raw_data_pkl_filename = os.path.join(directory, f"raw_data_{project_name}.pkl")
+    with open(raw_data_pkl_filename, 'wb') as f:
         pickle.dump(data, f)
 
-    print(f"Processed data saved to: {output_file_path}")
-    return output_file_path
+    print(f"\n✅ {raw_data_pkl_filename} is created and saved!\n")
+    return raw_data_pkl_filename
