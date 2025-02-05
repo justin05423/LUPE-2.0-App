@@ -1,22 +1,18 @@
-# utils/preprocess_step1.py
-
 import os
 import pickle
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from io import StringIO
+
+# Import the CSV reading helper and noise filtering function
 from utils.feature_utils import filter_pose_noise
 
 
+# Import the update_meta_file function from this same module (or ensure it is accessible)
 def update_meta_file(project_name, groups, conditions):
     """
     Update the meta.py file with project-specific groups and conditions.
-
-    Parameters:
-        project_name (str): Name of the project.
-        groups (list): List of group names.
-        conditions (list): List of condition names.
     """
     meta_file_path = os.path.join(os.path.dirname(__file__), 'meta.py')
 
@@ -69,7 +65,10 @@ def preprocess_step1(project_name, groups, conditions, uploaded_files):
     """
     print(f"\n🔍 DEBUG: Starting Step 1 for Project: {project_name}\n")
 
-    # Initialize data dictionary
+    # Automatically update the meta file with the provided groups and conditions
+    update_meta_file(project_name, groups, conditions)
+
+    # Initialize the data dictionary
     data = {group: {condition: {} for condition in conditions} for group in groups}
 
     # Process each uploaded file
@@ -78,17 +77,15 @@ def preprocess_step1(project_name, groups, conditions, uploaded_files):
             if group in uploaded_files and condition in uploaded_files[group]:
                 for uploaded_file in uploaded_files[group][condition]:
                     try:
-                        # Debug: Print the uploaded file object details
                         print(f"\n📂 Processing file: {uploaded_file.name} (Size: {uploaded_file.size} bytes)\n")
 
-                        # Read file contents properly using StringIO
-                        file_content = uploaded_file.getvalue().decode("utf-8")  # Convert bytes to string
-                        file_buffer = StringIO(file_content)  # Convert string to file-like object
+                        # Convert the uploaded file's bytes to a string and then to a file-like object
+                        file_content = uploaded_file.getvalue().decode("utf-8")
+                        file_buffer = StringIO(file_content)
 
                         # Read the CSV file
                         temp_df = pd.read_csv(file_buffer, header=[0, 1, 2, 3], sep=",", index_col=0)
 
-                        # Debug: Print dataframe shape
                         print(f"✅ Successfully loaded {uploaded_file.name} | Shape: {temp_df.shape}")
 
                         # Filter pose noise
@@ -98,8 +95,8 @@ def preprocess_step1(project_name, groups, conditions, uploaded_files):
                         currdf_filt, _ = filter_pose_noise(temp_df, idx_selected=idx_selected, idx_llh=idx_llh,
                                                            llh_value=0.1)
 
-                        # Store the filtered data in dictionary
-                        file_name = os.path.splitext(uploaded_file.name)[0]  # Extract file name
+                        # Use the file name (without extension) as the key
+                        file_name = os.path.splitext(uploaded_file.name)[0]
                         data[group][condition][file_name] = currdf_filt
 
                         print(f"✅ Processed & stored: {file_name} under [{group} -> {condition}]")
@@ -107,10 +104,9 @@ def preprocess_step1(project_name, groups, conditions, uploaded_files):
                     except Exception as e:
                         print(f"🚨 Error processing file {uploaded_file.name}: {e}")
 
-    # Save the processed data as a .pkl file
+    # Save the processed data as a pickle file
     directory = f"./LUPEAPP_processed_dataset/{project_name}/"
     os.makedirs(directory, exist_ok=True)
-
     raw_data_pkl_filename = os.path.join(directory, f"raw_data_{project_name}.pkl")
     with open(raw_data_pkl_filename, 'wb') as f:
         pickle.dump(data, f)

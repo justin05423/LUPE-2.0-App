@@ -264,7 +264,7 @@ def preprocess_workflow():
         uploaded_files = st.session_state.get("uploaded_files", {})
 
         # Debug: Print the uploaded_files dictionary
-        st.write("🔍 DEBUG: Uploaded Files Dictionary")
+        st.write("📋 Checkpoint!: Confirm Your Uploaded Files Dictionary")
         st.write(uploaded_files)
 
         if not uploaded_files:
@@ -498,7 +498,7 @@ def main():
         st.markdown("""---""")
         st.markdown(f" <h1 style='text-align: left; color: gray; font-size:16px; "
                     f"font-family:Avenir; font-weight:normal'>"
-                    f"LUPE is developed by Alexander Hsu and Justin James</h1> "
+                    f"LUPE is developed by Justin James and Alexander Hsu</h1> "
                     , unsafe_allow_html=True)
 
 # Navigation Logic

@@ -6,20 +6,8 @@ from utils.feature_utils import feature_extraction
 from utils.meta import *
 
 def preprocess_get_features(project_name, groups=None, conditions=None, debug=False):
-    """
-    Extracts features from the preprocessed data and saves the binned feature file.
 
-    Parameters:
-        project_name (str): The name of the project.
-        groups (list, optional): List of group names. Defaults to None.
-        conditions (list, optional): List of condition names. Defaults to None.
-        debug (bool, optional): If True, debug output will be printed. Defaults to False.
-
-    Returns:
-        str: Path to the saved features pickle file.
-    """
-    # Minimal feedback regardless of debug mode
-    st.write(f"Extracting features for project: {project_name} ⌛️")
+    st.write(f"Extracting features for project: {project_name}")
 
     # Define paths
     data_path = f"./LUPEAPP_processed_dataset/{project_name}/raw_data_{project_name}.pkl"
@@ -34,16 +22,21 @@ def preprocess_get_features(project_name, groups=None, conditions=None, debug=Fa
         for grp, cond_dict in data.items():
             st.write(f"Group: {grp}, Conditions: {list(cond_dict.keys())}")
 
-    # If groups and conditions are None, load them from meta.py dynamically
+    # If groups and conditions are not provided, try to load them from meta.py
     if groups is None or conditions is None:
         try:
-            groups = eval(f"groups_{project_name}")  # e.g., ["Combined", "Male", "Female"]
-            conditions = eval(f"conditions_{project_name}")  # e.g., ["EXP_YFP", "EXP_CONFON", "EXP_MORP"]
+            groups = eval(f"groups_{project_name}")
+            conditions = eval(f"conditions_{project_name}")
             if debug:
                 st.write(f"Loaded groups from meta: {groups}")
                 st.write(f"Loaded conditions from meta: {conditions}")
         except NameError as e:
-            raise ValueError(f"Could not find group/condition data in meta.py: {e}")
+            st.write(
+                f"Meta data for project {project_name} is not defined in meta.py. "
+                "Please run update_meta_file to add the groups and conditions for this project, "
+                "or pass them explicitly to preprocess_get_features()."
+            )
+            return None  # Exit the function early
 
     # Initialize feature dictionary
     features = {group: {condition: {} for condition in conditions} for group in groups}

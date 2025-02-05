@@ -5,15 +5,7 @@ from utils.classification import load_model, load_features, load_data, weighted_
 from utils.meta import *
 
 def preprocess_get_behaviors(project_name):
-    """
-    Predicts behaviors based on extracted features and saves the results.
 
-    Parameters:
-        project_name (str): The name of the project.
-
-    Returns:
-        str: Path to the saved behaviors pickle file.
-    """
     print(f"Predicting behaviors for project: {project_name}")
 
     # Define paths
