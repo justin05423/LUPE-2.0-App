@@ -48,7 +48,7 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
   
 4. **Activate the LUPE2APP Environment**
     ```bash
-  	conda activate LUPE2App
+  	conda activate LUPE2APP
   
 5. **Run the App 😎**
     ```bash
