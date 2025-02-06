@@ -36,7 +36,7 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
 
    Open your terminal and run:
    ```bash
-   git clone https://github.com/your_username/LUPE-2.0-App.git
+   git clone https://github.com/justin05423/LUPE-2.0-App.git
    cd LUPE-2.0-App
    
 2. #### Download the LUPE 2.0 A-SOiD Model [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the 'Model' folder.
