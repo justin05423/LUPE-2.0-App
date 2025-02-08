@@ -343,6 +343,7 @@ def analysis_workflow():
         key="general_conditions"
     )
 
+    # Analysis selection
     analysis_type = st.radio(
         "Select Analysis:",
         options=[
@@ -359,6 +360,17 @@ def analysis_workflow():
         ],
         index=0
     )
+
+    num_min = None
+    if analysis_type == "Behavior Binned-Ratio Timeline":
+        num_min = st.number_input(
+            "Select Time Bin Size (minutes):",
+            min_value=1,
+            max_value=60,
+            value=1,
+            step=1,
+            key="binned_ratio_timebin"
+        )
 
     time_ranges = []
     if analysis_type == "Behavior Timepoint Comparison":
@@ -412,14 +424,6 @@ def analysis_workflow():
         with st.spinner("Running analysis..."):
             try:
                 if analysis_type == "Behavior Binned-Ratio Timeline":
-                    num_min = st.number_input(
-                        "Time bin size (minutes):",
-                        min_value=1,
-                        max_value=60,
-                        value=1,
-                        step=1,
-                        key="binned_ratio_timebin"
-                    )
                     figs = behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min)
                 elif analysis_type == "Distance Traveled Heatmaps":
                     figs = behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions)
@@ -464,7 +468,6 @@ def analysis_workflow():
         ]:
             for f in figs:
                 st.pyplot(f)
-
 
 # Main Function
 def main():
