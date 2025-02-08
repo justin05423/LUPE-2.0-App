@@ -315,7 +315,7 @@ def preprocess_workflow():
 
 # Analysis Workflow
 def analysis_workflow():
-    st.markdown("## Analyses")
+    st.markdown("## LUPE Analysis Pipeline")
 
     if "current_project" not in st.session_state or not st.session_state["current_project"]:
         st.warning("Please select or create a project in the Preprocessing Workflow tab first.")
@@ -505,16 +505,16 @@ def main():
                     , unsafe_allow_html=True)
 
 # Navigation Logic
-page_names = ['Home', 'Preprocessing Workflow', 'Analyses']
+page_names = ['Home', 'Preprocessing Workflow', 'Analysis Pipeline']
 chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title=page_names[0], description="Model description"),
     stx.TabBarItemData(id=2, title=page_names[1], description="Run preprocessing"),
-    stx.TabBarItemData(id=3, title=page_names[2], description="Descriptive stats"),
+    stx.TabBarItemData(id=3, title=page_names[2], description="Run Analysis"),
 ], default=1)
 
 if page_names[int(chosen_id) - 1] == 'Home':
     main()
 elif page_names[int(chosen_id) - 1] == 'Preprocessing Workflow':
     preprocess_workflow()
-elif page_names[int(chosen_id) - 1] == 'Analyses':
+elif page_names[int(chosen_id) - 1] == 'Analysis Pipeline':
     analysis_workflow()
