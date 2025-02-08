@@ -63,7 +63,7 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
 ---
 
 # App Guide
-
+For a detailed walkthrough on using the LUPE 2.0 App, check out the [App Walkthrough](./AppWalkthrough.md).
 
 ---
 # Contacting
