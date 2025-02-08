@@ -13,6 +13,12 @@ With in-depth analysis and interactive visuals, as well as downloadable CSVs for
 Try LUPE today and unlock a new level of insights into animal behavior!
 </p>
 
+## Table of Contents
+- [System Requirements](#system-requirements)
+- [Installation Guide](#installation-guide)
+- [App Guide](#app-guide)
+- [Contacting](#contacting)
+
 ![Annotated Vids](public/annotated_vids_all.gif)
 
 ---
@@ -53,6 +59,11 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
 5. **Run the App 😎**
     ```bash
   	streamlit run lupe_analysis.py
+
+---
+
+# App Guide
+
 
 ---
 # Contacting
