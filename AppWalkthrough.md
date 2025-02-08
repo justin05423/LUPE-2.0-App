@@ -13,10 +13,20 @@ Want to trial-run the full app pipeline? Or jump straight into the LUPE Analysis
 
   <sup>[1]</sup> Demo data runs **LUPE-collected experiments** comparing control, **1%**, and **5% formalin response** in **C57BL/6 mice**.
 
-## 📌 Table of Contents 
+## 📌 Table of Contents  
+- [1️⃣ Setting Up Your Project](#1️⃣-setting-up-your-project)  
+- [2️⃣ Reviewing Uploaded Files & Beginning Preprocess Data Directory](#2️⃣-reviewing-uploaded-files--beginning-preprocess-data-directory)  
+- [3️⃣ Preprocess Features Directory](#3️⃣-preprocess-features-directory)  
+- [4️⃣ Preprocess Behavior Directory](#4️⃣-preprocess-behavior-directory)  
+- [5️⃣ Analysis Pipeline Setup](#5️⃣-analysis-pipeline-setup)  
+- [📌 NOTE: Analyses with User Inputs](#📌-note-analyses-with-user-inputs)  
+  - [Behavior Binned-Ratio Timeline](#behavior-binned-ratio-timeline)  
+  - [Behavior Timepoint Comparison](#behavior-timepoint-comparison)  
+  - [Behavior Kinematx](#behavior-kinematx)  
+- [📌 NOTE: Reloading Previous Projects Already Processed?](#📌-note-reloading-previous-projects-already-processed)  
+- [💡 Pro Tips](#💡-pro-tips)  
 
-
-
+---
 
 ### 1️⃣ Setting Up Your Project  
 Now that you have the app opened, let's set up your project! (If not follow link [here](https://github.com/justin05423/LUPE-2.0-App/tree/main?tab=readme-ov-file#installation-guide) to install/open app.
