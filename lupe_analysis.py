@@ -495,15 +495,23 @@ def main():
     _, mid_col, _ = st.columns([0.5, 1.5, 0.5])
 
     try:
-        # Convert the path to be Windows-compatible
+        # Ensure correct file path handling across OS
         behav_viddir = HERE / 'behavior_videos'
         gif_path = behav_viddir / f"{selected_behavior}.gif"
 
-        # Display GIF if it exists
+        # 🔍 Debugging: Print the full file path
+        st.write(f"Looking for GIF at: {gif_path}")
+        st.write(f"Converted to absolute path: {gif_path.resolve()}")
+
+        # Check if file exists
         if gif_path.exists():
+            st.write("✅ GIF file found. Attempting to load...")
             mid_col.image(str(gif_path))  # Convert Path object to string for Streamlit
-    except:
-        pass  # Silently ignore errors
+        else:
+            st.warning(f"⚠️ Warning: GIF not found at {gif_path}")
+
+    except Exception as e:
+        st.error(f"❌ Error loading GIF: {e}")
 
     bottom_cont = st.container()
     with bottom_cont:
