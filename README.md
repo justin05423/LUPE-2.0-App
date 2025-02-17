@@ -49,14 +49,22 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
     > **Note**: Find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) for analyzing pose estimation for LUPE video data.
     
 3.	**Create the Conda Environment**
-    ```bash
-  	conda env create -f LUPE2_App.yaml
-  
-4. **Activate the LUPE2APP Environment**
+
+  	   For *MacOS*:
+      ```bash
+      conda env create -f LUPE2_App.yaml
+      ```
+
+      For *Windows*:
+      ```bash
+      conda env create -f LUPE2_App_Win.yaml
+      ```
+
+5. **Activate the LUPE2APP Environment**
     ```bash
   	conda activate LUPE2APP
   
-5. **Run the App 😎**
+6. **Run the App 😎**
     ```bash
   	streamlit run lupe_analysis.py
 
