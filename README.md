@@ -60,11 +60,11 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
       conda env create -f LUPE2_App_Win.yaml
       ```
 
-5. **Activate the LUPE2APP Environment**
+4. **Activate the LUPE2APP Environment**
     ```bash
   	conda activate LUPE2APP
   
-6. **Run the App 😎**
+5. **Run the App 😎**
     ```bash
   	streamlit run lupe_analysis.py
 
