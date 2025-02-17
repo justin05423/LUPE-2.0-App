@@ -481,9 +481,11 @@ def main():
                 f"as well as downloadable CSVs for easy integration into your existing workflow. "
                 f"Try LUPE today and unlock a new level of insights into animal behavior."
                 , unsafe_allow_html=True)
+
     st.markdown(f" <h1 style='text-align: left; color: #EEEEEE; font-size:18px; "
                 f"font-family:Avenir; font-weight:normal'>Select an example behavior</h1> "
                 , unsafe_allow_html=True)
+
     selected_behavior = st.radio('Behaviors',
                                  options=st.session_state['annotated_behaviors'],
                                  index=0,
@@ -491,11 +493,18 @@ def main():
                                  label_visibility='collapsed')
 
     _, mid_col, _ = st.columns([0.5, 1.5, 0.5])
+
     try:
-        behav_viddir = HERE.joinpath('behavior_videos')
-        mid_col.image(f'{behav_viddir}/{selected_behavior}.gif')
+        # Convert the path to be Windows-compatible
+        behav_viddir = HERE / 'behavior_videos'
+        gif_path = behav_viddir / f"{selected_behavior}.gif"
+
+        # Display GIF if it exists
+        if gif_path.exists():
+            mid_col.image(str(gif_path))  # Convert Path object to string for Streamlit
     except:
-        pass
+        pass  # Silently ignore errors
+
     bottom_cont = st.container()
     with bottom_cont:
         st.markdown("""---""")
