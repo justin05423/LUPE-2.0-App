@@ -77,7 +77,7 @@ For a detailed walkthrough on using the LUPE 2.0 App, check out the [App Walkthr
 ---
 
 # Physical System Build
-For a detailed walkthrough on using the LUPE 2.0 App, check out the [Build](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-Build-%F0%9F%9B%A0%EF%B8%8F-%F0%9F%A7%B0).
+For an overview on building the LUPE 2.0 System, check out the [Build](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-Build-%F0%9F%9B%A0%EF%B8%8F-%F0%9F%A7%B0).
 
 ---
 
