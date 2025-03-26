@@ -17,7 +17,7 @@ Try LUPE today and unlock a new level of insights into animal behavior!
 - [System Requirements](#system-requirements)
 - [Installation Guide](#installation-guide)
 - [App Guide](#app-guide)
-- [Physical System Build](#lupe-physical-system-build)
+- [Physical System Build](#physical-system-build)
 - [Contacting](#contacting)
 
 ![Annotated Vids](public/annotated_vids_all.gif)
@@ -76,7 +76,7 @@ For a detailed walkthrough on using the LUPE 2.0 App, check out the [App Walkthr
 
 ---
 
-# LUPE Physical System Build
+# Physical System Build
 For a detailed walkthrough on using the LUPE 2.0 App, check out the [Build](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-Build-%F0%9F%9B%A0%EF%B8%8F-%F0%9F%A7%B0).
 
 ---
