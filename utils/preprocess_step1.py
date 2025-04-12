@@ -1,4 +1,5 @@
 import os
+import datetime
 import pickle
 import numpy as np
 import pandas as pd
@@ -107,6 +108,16 @@ def preprocess_step1(project_name, groups, conditions, uploaded_files):
     # Save the processed data as a pickle file
     directory = f"./LUPEAPP_processed_dataset/{project_name}/"
     os.makedirs(directory, exist_ok=True)
+
+    # Save project info to a text file for later reference
+    project_info_filename = os.path.join(directory, f"project_info_{project_name}.txt")
+    analysis_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(project_info_filename, "w") as f_info:
+        f_info.write(f"project_name = {project_name}\n")
+        f_info.write(f"groups = {groups}\n")
+        f_info.write(f"conditions = {conditions}\n")
+        f_info.write(f"analysis_date = {analysis_time}\n")
+
     raw_data_pkl_filename = os.path.join(directory, f"raw_data_{project_name}.pkl")
     with open(raw_data_pkl_filename, 'wb') as f:
         pickle.dump(data, f)
