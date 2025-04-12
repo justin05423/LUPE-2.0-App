@@ -22,6 +22,7 @@ from utils.analysis_scripts.behavior_total_frames import behavior_total_frames
 from utils.analysis_scripts.behavior_transitions import behavior_transitions
 from utils.analysis_scripts.behavior_timepoint_comparison import behavior_timepoint_comparison
 from utils.analysis_scripts.behavior_kinematx import behavior_kinematx
+from utils.analysis_scripts.behavior_binned_mouse_screening import behavior_binned_mouse_screening
 
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -356,7 +357,8 @@ def analysis_workflow():
             "Behavior Total Frames",
             "Behavior Transitions",
             "Behavior Timepoint Comparison",
-            "Behavior Kinematx"
+            "Behavior Kinematx",
+            "Behavior Binned Mouse Screening"
         ],
         index=0
     )
@@ -420,6 +422,18 @@ def analysis_workflow():
                       'r_hindpaw_digit5', 'genitalia', 'tail_base']
         bp_selects = st.selectbox("Select Bodypart:", bp_options, key="kinematx_bp")
 
+    # Additional inputs for Behavior Binned Mouse Screening analysis
+    if analysis_type == "Behavior Binned Mouse Screening":
+        st.markdown("### Heatmap Settings")
+        set_heatmap_max = st.checkbox(
+            "Do you want to set a fixed maximum for heatmaps? (Recommended: 1000, 2000, or 3000)",
+            key="heatmap_max_toggle")
+        if set_heatmap_max:
+            heatmap_max = st.number_input("Enter maximum value for heatmaps:", min_value=0, value=3000, step=100,
+                                          key="heatmap_max_input")
+        else:
+            heatmap_max = None
+
     if st.button("Run Analysis"):
         with st.spinner("Running analysis..."):
             try:
@@ -447,6 +461,13 @@ def analysis_workflow():
                     return  # No figures to display for this analysis
                 elif analysis_type == "Behavior Kinematx":
                     fig = behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects)
+                elif analysis_type == "Behavior Binned Mouse Screening":
+                    heatmap_files = behavior_binned_mouse_screening(project_name, heatmap_max_value=heatmap_max)
+                    for behavior_name, svg_path in heatmap_files.items():
+                        st.markdown(f"**{behavior_name.capitalize()} Heatmap**")
+                        with open(svg_path, "r") as f:
+                            svg_content = f.read()
+                        st.components.v1.html(svg_content, height=800, scrolling=True)
             except Exception as e:
                 st.error(f"Error during analysis: {e}")
                 return
