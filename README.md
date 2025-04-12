@@ -17,6 +17,7 @@ Try LUPE today and unlock a new level of insights into animal behavior!
 - [System Requirements](#system-requirements)
 - [Installation Guide](#installation-guide)
 - [App Guide](#app-guide)
+- [Physical System Build](#physical-system-build)
 - [Contacting](#contacting)
 
 ![Annotated Vids](public/annotated_vids_all.gif)
@@ -74,6 +75,12 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
 For a detailed walkthrough on using the LUPE 2.0 App, check out the [App Walkthrough](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-App-Walkthrough--%F0%9F%9A%80).
 
 ---
+
+# Physical System Build
+For an overview on building the LUPE 2.0 System, check out the [Build](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-Build-%F0%9F%9B%A0%EF%B8%8F-%F0%9F%A7%B0).
+
+---
+
 # Contacting
 
 #### Project Funding
