@@ -23,6 +23,7 @@ from utils.analysis_scripts.behavior_transitions import behavior_transitions
 from utils.analysis_scripts.behavior_timepoint_comparison import behavior_timepoint_comparison
 from utils.analysis_scripts.behavior_kinematx import behavior_kinematx
 from utils.analysis_scripts.behavior_binned_mouse_screening import behavior_binned_mouse_screening
+from utils.analysis_scripts.behavior_LUPE_AMPS import behavior_LUPE_AMPS
 
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -229,6 +230,7 @@ with st.sidebar:
                 st.markdown("Uploaded Files:")
                 st.dataframe([file.name for file in st.session_state["uploaded_files"][group_name][condition_name]])
 
+# Preprocess Workflow
 def preprocess_workflow():
     st.markdown("## Preprocessing Workflow")
 
@@ -314,7 +316,7 @@ def preprocess_workflow():
     else:
         st.success("All preprocessing steps are complete! 🚀")
 
-# Analysis Workflow
+# LUPE Analysis Workflow
 def analysis_workflow():
     st.markdown("## LUPE Analysis Pipeline")
 
@@ -490,7 +492,86 @@ def analysis_workflow():
             for f in figs:
                 st.pyplot(f)
 
-# Main Function
+# LUPE-AMPS Analysis Workflow
+def pain_state_model_analysis():
+    st.markdown("## LUPE-Affective-Motivational Pain Scale (AMPS)")
+    st.write("""\
+LUPE-AMPS is a dedicated module within the LUPE platform that focuses on uncovering latent behavioral states in mice — those subtle patterns that indicate pain or the effect of analgesia. This module uses a combination of behavioral metrics derived from video-based pose estimation and classification.
+
+The ultimate goal of LUPE-AMPS is to translate these behavioral signatures into a quantitative index known as the Affective-Motivational Pain Scale (AMPS). This index helps researchers measure pain in a more nuanced and objective way by correlating the observed behaviors with the subjective experience of pain.
+""")
+
+    st.markdown("### Requirements")
+    st.markdown("""\
+The model is specifically trained to analyze localized hindpaw injuries. It leverages behavioral data collected from formalin, capsaicin, and spared nerve injuries to the hindpaw. For more details on the LUPE-AMPS module, please refer to the [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2).
+""")
+
+    st.markdown("### How to Begin?")
+    st.markdown("""\
+1. **Complete LUPE Analysis Pipeline:** Ensure that you complete the entire pipeline, with particular attention to the *Behavior CSV Classification* step.
+2. **Organize/Upload CSVs:** Arrange and upload your CSV files according to the experimental conditions that need to be compared, including data from the uninjured/control group.
+3. **Configure Project and Conditions:** Name your project (using the dataset from which the LUPE pipeline was run) and set up your groups and conditions. (Enter groups and conditions in the sidebar if not already present.)
+""")
+
+    # New section for model option selection
+    st.markdown("### Select Model Option")
+    st.markdown("For novel analysis, you can choose to either use the original LUPE-AMPS model (see [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2)) or create a new LUPE-AMPS model on novel data.")
+    model_option = st.radio(
+        "Choose Model Option",
+        options=[
+            "Use original LUPE-AMPS model for novel analysis (see [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2))",
+            "Create new LUPE-AMPS model on novel data"
+        ],
+        index=0
+    )
+
+    if model_option == "Create new LUPE-AMPS model on novel data":
+        st.markdown("### Create LUPE-AMPS Model")
+        st.markdown(
+            "🚧 **Under Construction:** Please check back later or contact the developers/authors for more information.")
+
+    elif model_option.startswith("Use original LUPE-AMPS model"):
+
+        # Check if a project has been selected/completed in the Preprocessing Workflow tab
+
+        if "current_project" not in st.session_state or not st.session_state["current_project"]:
+            st.warning("Please select or create a project in the Preprocessing Workflow tab first.")
+
+            return
+
+        st.markdown("### LUPE-AMPS Analysis 🚀")
+        st.markdown("### Select Groups and Conditions")
+        st.markdown("###### Enter groups and conditions in the sidebar if not already present.")
+        selected_groups = st.multiselect(
+            "Select Groups:",
+            options=list(st.session_state["group_names"].values()),
+            default=list(st.session_state["group_names"].values())[:1],
+            key="general_groups"
+        )
+        selected_conditions = st.multiselect(
+            "Select Conditions:",
+            options=st.session_state["condition_names"],
+            default=st.session_state["condition_names"][:1],
+            key="general_conditions"
+        )
+
+        if st.button("Run LUPE‑AMPS Analysis"):
+            with st.spinner("Running LUPE‑AMPS analysis..."):
+                try:
+                    project_name = st.session_state["current_project"]
+                    behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions)
+                    st.success("LUPE‑AMPS analysis completed! See project directory to see the results.")
+                except Exception as e:
+                    st.error(f"Error during LUPE‑AMPS analysis: {e}")
+
+
+    bottom_cont = st.container()
+    with bottom_cont:
+        st.markdown("""---""")
+        st.markdown(f"<h1 style='text-align: left; color: gray; font-size:16px; font-family:Avenir; font-weight:normal'>LUPE-AMPS was developed by Sophie Rogers, and this version of the code has been adapted and reproduced by Justin James.</h1>", unsafe_allow_html=True)
+
+
+# Welcome Page
 def main():
     st.markdown(f" <h1 style='text-align: left; color: #FFFFFF; font-size:18px; "
                 f"font-family:Avenir; font-weight:normal'>"
@@ -531,15 +612,16 @@ def main():
         st.markdown("""---""")
         st.markdown(f" <h1 style='text-align: left; color: gray; font-size:16px; "
                     f"font-family:Avenir; font-weight:normal'>"
-                    f"LUPE is developed by Justin James and Alexander Hsu</h1> "
+                    f"LUPE is developed by Justin James and Alexander Hsu; Maintained by Justin James</h1> "
                     , unsafe_allow_html=True)
 
 # Navigation Logic
-page_names = ['Home', 'Preprocessing Workflow', 'Analysis Pipeline']
+page_names = ['Home', 'Preprocessing Workflow', 'Analysis Pipeline', 'LUPE-AMPS']
 chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title=page_names[0], description="Model description"),
     stx.TabBarItemData(id=2, title=page_names[1], description="Run preprocessing"),
     stx.TabBarItemData(id=3, title=page_names[2], description="Run Analysis"),
+    stx.TabBarItemData(id=4, title=page_names[3], description="Pain State Analysis"),
 ], default=1)
 
 if page_names[int(chosen_id) - 1] == 'Home':
@@ -548,3 +630,5 @@ elif page_names[int(chosen_id) - 1] == 'Preprocessing Workflow':
     preprocess_workflow()
 elif page_names[int(chosen_id) - 1] == 'Analysis Pipeline':
     analysis_workflow()
+elif page_names[int(chosen_id) - 1] == 'LUPE-AMPS':
+    pain_state_model_analysis()
