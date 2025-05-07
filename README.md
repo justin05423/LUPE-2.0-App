@@ -15,7 +15,7 @@ Try LUPE today and unlock a new level of insights into animal behavior!
 
 ## Table of Contents
 - [System Requirements](#system-requirements)
-- [Installation Guide](#installation-guide)
+- [Local Installation Guide](#local-installation-guide)
 - [App Guide](#app-guide)
 - [Physical System Build](#physical-system-build)
 - [Contacting](#contacting)
@@ -37,7 +37,18 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
 
 ---
 
-# Installation Guide
+# Try It Online
+
+Play with the fully-deployed LUPE 2.0 behavioral analysis app right now:
+
+👉 **https://lupe2app.streamlit.app/**
+
+_No installation required!_
+
+---
+
+# Local Installation Guide
+If you’d like to run “LUPE-2.0-App” on your own machine, follow these steps:
 
 1. **Clone or Download the Repository**
 
