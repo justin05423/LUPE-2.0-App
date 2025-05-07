@@ -15,6 +15,7 @@ Try LUPE today and unlock a new level of insights into animal behavior!
 
 ## Table of Contents
 - [System Requirements](#system-requirements)
+- [Try It Online](#try-it-online)
 - [Local Installation Guide](#local-installation-guide)
 - [App Guide](#app-guide)
 - [Physical System Build](#physical-system-build)
