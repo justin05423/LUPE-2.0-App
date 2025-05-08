@@ -38,18 +38,8 @@ DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 mod
 
 ---
 
-# Try It Online
-
-Play with the fully-deployed LUPE 2.0 behavioral analysis app right now:
-
-👉 **https://lupe2app.streamlit.app/**
-
-_No installation required!_
-
----
-
 # Local Installation Guide
-If you’d like to run “LUPE-2.0-App” on your own machine, follow these steps:
+To run “LUPE-2.0-App” on your own computer, follow these steps:
 
 1. **Clone or Download the Repository**
 
