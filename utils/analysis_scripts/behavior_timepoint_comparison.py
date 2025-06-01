@@ -22,10 +22,10 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
     time_labels = [f"{start // 60}-{end // 60} min" for start, end in time_ranges]
 
     # Directory containing the per-second CSV files
-    input_dir = f'./LUPEAPP_processed_dataset/{project_name}/figures/behaviors_csv_raw-classification/seconds'
+    input_dir = os.path.join('.', 'LUPEAPP_processed_dataset', project_name, 'figures', 'behaviors_csv_raw-classification', 'seconds')
 
     # Directory to save the analysis results
-    analysis_dir = f'./LUPEAPP_processed_dataset/{project_name}/figures/behavior_timepoint_comparison'
+    analysis_dir = os.path.join('.', 'LUPEAPP_processed_dataset', project_name, 'figures', 'behavior_timepoint_comparison')
     os.makedirs(analysis_dir, exist_ok=True)
 
     def calculate_behavior_metrics(data, frame_rate=60):
@@ -52,54 +52,49 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
         return metrics
 
     # Processing each file
-    for file_name in os.listdir(input_dir):
-        if file_name.endswith('.csv'):
-            file_path = os.path.join(input_dir, file_name)
-            df = pd.read_csv(file_path)
-
-            max_time = df['time_seconds'].max()
-
-            bins = [start for start, end in time_ranges] + [time_ranges[-1][1]]
-            if max_time < bins[-1]:
-                print(
-                    f"Warning: Maximum time ({max_time}s) in {file_name} is less than the final bin end ({bins[-1]}s).")
-                bins[-1] = max_time
-
-            print(f"Processing file: {file_name}")
-            print(f"Bins: {bins}")
-            print(f"Time Labels: {time_labels}")
-
-            try:
-                df['time_group'] = pd.cut(df['time_seconds'],
-                                          bins=bins,
-                                          labels=time_labels,
-                                          right=False)
-            except ValueError as e:
-                print(f"Error in pd.cut for file {file_name}: {e}")
+    for group in selected_groups:
+        for condition in selected_conditions:
+            group_cond_dir = os.path.join(input_dir, group, condition)
+            if not os.path.isdir(group_cond_dir):
+                print(f"No directory found for group '{group}' and condition '{condition}'")
                 continue
-
-                # Analyzing behaviors for each time group
-            all_metrics = []
-            for time_group, group_data in df.groupby('time_group', observed=False):
-                if not group_data.empty:
-                    metrics = calculate_behavior_metrics(group_data)
-                    for behavior, behavior_metrics in metrics.items():
-                        all_metrics.append({
-                            'Time Group': time_group,
-                            'Behavior': behavior,
-                            **behavior_metrics
-                        })
-
-            # DataFrame + save results
-            analysis_df = pd.DataFrame(all_metrics)
-            analysis_file_path = os.path.join(analysis_dir, f'analysis_{file_name}')
-            analysis_df.to_csv(analysis_file_path, index=False)
-            print(f'Saved analysis for {file_name} to {analysis_file_path}')
+            for file_name in os.listdir(group_cond_dir):
+                if not file_name.endswith('.csv'):
+                    continue
+                file_path = os.path.join(group_cond_dir, file_name)
+                df = pd.read_csv(file_path)
+                max_time = df['time_seconds'].max()
+                bins = [start for start, end in time_ranges] + [time_ranges[-1][1]]
+                if max_time < bins[-1]:
+                    print(f"Warning: Maximum time ({max_time}s) in {file_name} is less than the final bin end ({bins[-1]}s).")
+                    bins[-1] = max_time
+                try:
+                    df['time_group'] = pd.cut(df['time_seconds'], bins=bins, labels=time_labels, right=False)
+                except ValueError as e:
+                    print(f"Error in pd.cut for file {file_name}: {e}")
+                    continue
+                all_metrics = []
+                for time_group, group_data in df.groupby('time_group', observed=False):
+                    if not group_data.empty:
+                        metrics = calculate_behavior_metrics(group_data)
+                        for behavior, behavior_metrics in metrics.items():
+                            all_metrics.append({
+                                'Group': group,
+                                'Condition': condition,
+                                'Time Group': time_group,
+                                'Behavior': behavior,
+                                **behavior_metrics
+                            })
+                analysis_df = pd.DataFrame(all_metrics)
+                analysis_file_name = f'analysis_{group}_{condition}_{file_name}'
+                analysis_file_path = os.path.join(analysis_dir, analysis_file_name)
+                analysis_df.to_csv(analysis_file_path, index=False)
+                print(f"Saved analysis for {file_name} to {analysis_file_path}")
 
     print('Behavior analysis completed for all files.')
 
     # Cohort Comparisons
-    cohort_summary_dir = f'./LUPEAPP_processed_dataset/{project_name}/figures/behavior_timepoint_comparison/cohort_summaries'
+    cohort_summary_dir = os.path.join('.', 'LUPEAPP_processed_dataset', project_name, 'figures', 'behavior_timepoint_comparison', 'cohort_summaries')
     os.makedirs(cohort_summary_dir, exist_ok=True)
 
     def aggregate_cohort_data(group_name, condition_list):

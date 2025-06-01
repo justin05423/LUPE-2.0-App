@@ -152,6 +152,7 @@ with st.sidebar:
 
     # Configure Groups
     st.markdown("### Configure Groups")
+    st.caption("Tip: Limit spaces in group names to prevent confusion with coding language.")
     num_groups = st.number_input(
         "Number of Groups:",
         min_value=1,
@@ -181,6 +182,7 @@ with st.sidebar:
 
     # Configure Conditions
     st.markdown("### Configure Conditions")
+    st.caption("Tip: Limit spaces in condition names to prevent confusion with coding language.")
     num_conditions = st.number_input(
         "Number of Conditions:",
         min_value=1,
@@ -474,6 +476,7 @@ def analysis_workflow():
                 st.error(f"Error during analysis: {e}")
                 return
         st.success("Analysis completed!")
+        st.info(f"All output files, including CSVs and figures, are saved under: {processed_data_dir}")
 
         # Display the resulting figure(s)
         if analysis_type in [
@@ -612,7 +615,7 @@ def main():
         st.markdown("""---""")
         st.markdown(f" <h1 style='text-align: left; color: gray; font-size:16px; "
                     f"font-family:Avenir; font-weight:normal'>"
-                    f"LUPE is developed by Justin James and Alexander Hsu; Maintained by Justin James</h1> "
+                    f"LUPE is developed by Justin James and Alexander Hsu; Maintained by Justin James.</h1> "
                     , unsafe_allow_html=True)
 
 # Navigation Logic

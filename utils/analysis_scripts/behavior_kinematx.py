@@ -21,88 +21,139 @@ from utils.meta import keypoints, behavior_names  # 'keypoints' should be a list
 
 def behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects):
     """
-    Calculate and plot the average displacement of a selected bodypart across behaviors.
+    Calculate and plot the average displacement of a selected bodypart across behaviors,
+    saving one CSV per condition and returning a single figure with one subplot per condition.
 
     Parameters:
         project_name (str): The project name.
         selected_group (str): The group name to analyze (only one).
         selected_conditions (list): A list of condition names to analyze.
-        bp_selects (str): The bodypart of interest (e.g., 'genitalia').
+        bp_selects (str): The bodypart of interest (e.g., 'l_hindpaw').
 
-    Returns:
-        fig (matplotlib.figure.Figure): The generated heatmap figure.
     """
-    # Define paths using the app's directory structure
     base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
     model_path = os.path.join("model", "model.pkl")
     data_path = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
     features_path = os.path.join(base_dir, f"binned_features_{project_name}.pkl")
     behaviors_path = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
 
-    # Load data
     model = load_model(model_path)
     poses = load_data(data_path)
     features = load_features(features_path)
     behaviors = load_behaviors(behaviors_path)
 
-    # Define directory to save figures and CSV files
     figure_dir = os.path.join(base_dir, "figures", "behavior_kinematx")
     if not os.path.exists(figure_dir):
         os.makedirs(figure_dir)
 
-    movement_by_condition = {}
+    perfile_dir = os.path.join(figure_dir, "per_file_avg_displacement")
+    if not os.path.exists(perfile_dir):
+        os.makedirs(perfile_dir)
 
-    # For each condition, process all files in the selected group
+    movement_by_condition = {}
+    bin_centers_by_condition = {}
+
     for selected_condition in selected_conditions:
-        # Determine the index of the selected bodypart from keypoints
         try:
             bodypart = keypoints.index(bp_selects)
         except ValueError:
             raise ValueError(f"Bodypart '{bp_selects}' not found in keypoints.")
 
-        bout_disp_all = []
-        # Instead of assuming keys like 'file0', iterate over the actual keys
+        all_files_bout_disp = {}
         files_dict = behaviors[selected_group][selected_condition]
         for file_key in files_dict.keys():
-            # get_avg_kinematics returns multiple outputs; we need the 'bout_disp' output.
-            # The expected output order: behavior, behavioral_start_time, behavior_duration, bout_disp, bout_duration, bout_avg_speed
-            outputs = get_avg_kinematics(files_dict[file_key],
-                                         poses[selected_group][selected_condition][file_key],
-                                         bodypart, framerate=60)
-            bout_disp = outputs[3]
-            bout_disp_all.append(bout_disp)
+            _, _, _, bout_disp_dict, _, _ = get_avg_kinematics(
+                files_dict[file_key],
+                poses[selected_group][selected_condition][file_key],
+                bodypart,
+                framerate=60
+            )
 
-        # At this point, bout_disp_all is a list (one per file) of dictionaries keyed by behavior names.
-        # Aggregate displacement data for each behavior:
+            for beh in bout_disp_dict:
+                bout_disp_dict[beh] = np.asarray(bout_disp_dict[beh])
+
+            all_files_bout_disp[file_key] = bout_disp_dict
+
+            perfile_avg_rows = []
+            for beh in behavior_names:
+                arr = bout_disp_dict.get(beh, np.array([]))
+                avg_disp = float(np.mean(arr)) if (arr.ndim == 1 and arr.size > 0) else 0.0
+                perfile_avg_rows.append({
+                    'File': file_key,
+                    'Behavior': beh,
+                    'AvgDisplacement': avg_disp
+                })
+
+            df_perfile_avg = pd.DataFrame(perfile_avg_rows)
+            perfile_avg_path = os.path.join(
+                perfile_dir,
+                f"{selected_group}_{selected_condition}_{file_key}_avg_displacement.csv"
+            )
+            df_perfile_avg.to_csv(perfile_avg_path, index=False)
+            print(f"Saved per-file average displacement: {perfile_avg_path}")
+
         behavioral_sums = {}
-        for behav in behavior_names:
-            # For each file, if the dictionary contains data for this behavior, include it.
-            data_list = [file_dict[behav] for file_dict in bout_disp_all if behav in file_dict]
-            if data_list:
-                behavioral_sums[behav] = np.hstack(data_list)
+        for beh in behavior_names:
+            concatenated = []
+            for file_key, disp_dict in all_files_bout_disp.items():
+                arr = disp_dict.get(beh, np.array([]))
+                if arr.ndim == 1 and arr.size > 0:
+                    concatenated.append(arr)
+            behavioral_sums[beh] = np.hstack(concatenated) if concatenated else np.array([])
+
+        desc_rows = []
+        for beh, arr in behavioral_sums.items():
+            if arr.ndim == 1 and arr.size > 0:
+                mean_disp = float(np.mean(arr))
+                median_disp = float(np.median(arr))
+                std_disp = float(np.std(arr))
+                count_n = int(arr.size)
             else:
-                behavioral_sums[behav] = np.array([])
+                mean_disp = median_disp = std_disp = 0.0
+                count_n = 0
+            desc_rows.append({
+                'Condition': selected_condition,
+                'Behavior': beh,
+                'MeanDisplacement': mean_disp,
+                'MedianDisplacement': median_disp,
+                'StdDisplacement': std_disp,
+                'Count': count_n
+            })
+        df_desc = pd.DataFrame(desc_rows)
+        desc_csv_path = os.path.join(
+            figure_dir,
+            f"behavior_kinematx_descriptive_stats_{selected_group}_{selected_condition}_{bp_selects}.csv"
+        )
+        df_desc.to_csv(desc_csv_path, index=False)
+        print(f"Saved descriptive stats CSV: {desc_csv_path}")
 
-        # Determine the maximum displacement among behaviors with enough data
-        max_perb = []
-        for beh in behavioral_sums:
-            if len(behavioral_sums[beh]) > 10:
-                max_perb.append(np.percentile(behavioral_sums[beh], 95))
-        max_all = np.max(max_perb) if max_perb else 1  # fallback to 1 if no data
+        global_max_perb = [
+            np.percentile(arr, 95)
+            for arr in behavioral_sums.values()
+            if arr.ndim == 1 and arr.size > 10
+        ]
+        max_all = np.max(global_max_perb) if global_max_perb else 1.0
 
-        # Define the number of movement bins
         movement_n_bins = 10
-        pre_alloc_movement = np.zeros((len(behavior_names), movement_n_bins))
-        label_encoder = LabelEncoder()
+        global_bin_edges = np.linspace(0, max_all, movement_n_bins + 1)
+        global_bin_centers = (global_bin_edges[:-1] + global_bin_edges[1:]) / 2
+        bin_centers_by_condition[selected_condition] = global_bin_centers
 
-        # Create histogram of displacements for each behavior
-        for b, behav in enumerate(behavior_names):
-            df_bp = pd.DataFrame(data=behavioral_sums[behav], columns=['bp_movement'])
-            n_bins = np.linspace(0, max_all, movement_n_bins)
-            # Use pd.cut to bin the data
-            cat, bins = pd.cut(df_bp['bp_movement'], n_bins, retbins=True)
-            y = label_encoder.fit_transform(cat)
-            pre_alloc_movement[b, :] = np.histogram(y, bins=np.arange(0, movement_n_bins + 1))[0]
+        pre_alloc_movement = np.zeros((len(behavior_names), movement_n_bins))
+        for b, beh in enumerate(behavior_names):
+            arr = behavioral_sums.get(beh, np.array([]))
+            if arr.ndim != 1 or arr.size == 0:
+                counts = np.zeros(movement_n_bins)
+            else:
+                df_temp = pd.DataFrame({'bp_movement': arr})
+                cats = pd.cut(
+                    df_temp['bp_movement'],
+                    bins=global_bin_edges,
+                    labels=False,
+                    include_lowest=True
+                )
+                counts, _ = np.histogram(cats, bins=np.arange(-0.5, movement_n_bins + 0.5, 1))
+            pre_alloc_movement[b, :] = counts
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -111,63 +162,70 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
 
         movement_by_condition[selected_condition] = movement_by_behav
 
-    # Save the aggregated movement data to a CSV file
-    csv_data = []
-    for condition, movement_data in movement_by_condition.items():
-        for beh_index, behavior in enumerate(behavior_names):
-            for bin_index, value in enumerate(movement_data[beh_index]):
-                csv_data.append({
-                    'Condition': condition,
-                    'Behavior': behavior,
-                    'Bin': bin_index,
-                    'Probability': value
-                })
-    df_csv = pd.DataFrame(csv_data)
-    csv_path = os.path.join(figure_dir, f"avg_displacement_conditions_{selected_group}_{bp_selects}.csv")
-    df_csv.to_csv(csv_path, index=False)
-    print(f"CSV saved to {csv_path}")
-
-    # Reload CSV and fill missing values with 0.0
-    df_csv = pd.read_csv(csv_path)
-    df_csv['Probability'].fillna(0.0, inplace=True)
-    df_csv.to_csv(csv_path, index=False)
-
-    # Reorganize data for heatmap plotting
     for condition in selected_conditions:
-        movement_by_condition[condition] = np.zeros((len(behavior_names), movement_n_bins))
-        for beh_index, behavior in enumerate(behavior_names):
-            for bin_index in range(movement_n_bins):
-                value = df_csv[(df_csv['Condition'] == condition) &
-                               (df_csv['Behavior'] == behavior) &
-                               (df_csv['Bin'] == bin_index)]['Probability']
-                if not value.empty:
-                    movement_by_condition[condition][beh_index, bin_index] = value.values[0]
+        csv_rows = []
+        centers = bin_centers_by_condition[condition]
+        mov_data = movement_by_condition[condition]
+        for beh_idx, beh in enumerate(behavior_names):
+            for bin_idx, prob in enumerate(mov_data[beh_idx]):
+                csv_rows.append({
+                    'Condition': condition,
+                    'Behavior': beh,
+                    'Bin': bin_idx,
+                    'BinCenter': float(centers[bin_idx]),
+                    'Probability': float(prob)
+                })
 
-    # Plot: one subplot per condition (vertical stack)
+        df_condition = pd.DataFrame(csv_rows)
+        condition_csv_path = os.path.join(
+            figure_dir,
+            f"plot_avg_displacement_{selected_group}_{condition}_{bp_selects}.csv"
+        )
+        df_condition.to_csv(condition_csv_path, index=False)
+        print(f"Saved pooled displacement CSV for '{condition}': {condition_csv_path}")
+
     n_conditions = len(selected_conditions)
-    if n_conditions > 1:
-        fig, axes = plt.subplots(nrows=n_conditions, ncols=1, figsize=(10, 10), sharex=True)
-    else:
-        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+    n_behaviors = len(behavior_names)
+    n_bins = movement_n_bins  # == 10
+
+    fig, axes = plt.subplots(
+        nrows=n_conditions,
+        ncols=1,
+        figsize=(10, 4 * n_conditions),
+        sharex=True
+    )
+    if n_conditions == 1:
         axes = [axes]
 
     for i, condition in enumerate(selected_conditions):
         ax = axes[i]
-        heatmap = ax.imshow(movement_by_condition[condition], aspect='auto', cmap="viridis")
-        ax.set_title(f'{selected_group} - {condition}')
-        ax.set_xlabel('Avg Displacement (pixels/frame)')
-        ax.set_ylabel('Behaviors')
-        ax.set_xticks(np.arange(movement_n_bins))
-        ax.set_yticks(np.arange(len(behavior_names)))
+        heatmap = ax.imshow(
+            movement_by_condition[condition],
+            aspect='auto',
+            cmap='viridis'
+        )
+        ax.set_title(f"{selected_group} – {condition}")
+        ax.set_ylabel("Behaviors")
+        ax.set_yticks(np.arange(n_behaviors))
         ax.set_yticklabels(behavior_names)
-        fig.colorbar(heatmap, ax=ax, label='Probability of Displacement')
+        ax.set_xlabel("Displacement Bin Center (pixels/frame)")
 
-    plt.suptitle(f'Average Displacement for Bodypart - {bp_selects}', fontsize=14)
-    plt.tight_layout()
+        # Use that condition’s bin centers for x‐tick labels
+        centers = bin_centers_by_condition[condition]
+        ax.set_xticks(np.arange(n_bins))
+        ax.set_xticklabels([f"{c:.2f}" for c in centers], rotation=45, ha='right')
 
-    # Save the figure as an SVG file
-    fig_path = os.path.join(figure_dir, f"avg_displacement_conditions_{selected_group}_{bp_selects}.svg")
+        fig.colorbar(heatmap, ax=ax, label="Probability")
+
+    plt.suptitle(f"Average Displacement Distribution for Bodypart: {bp_selects}", fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+    fig_path = os.path.join(
+        figure_dir,
+        f"avg_displacement_conditions_{selected_group}_{bp_selects}.svg"
+    )
     plt.savefig(fig_path, format='svg', dpi=600, bbox_inches='tight')
-    plt.show()
+    print(f"Saved combined heatmap figure: {fig_path}")
 
+    # 9) Return that one Figure so that st.pyplot(fig) works
     return fig
