@@ -28,15 +28,27 @@ Try LUPE today and unlock a new level of insights into animal behavior!
 ---
 
 # System Requirements
-The LUPE-2.0 App requires only a standard computer with enough RAM to support streamlit data analysis and output. 
 
-DeepLabCut<sup>1,2</sup> and A-SOiD<sup>3</sup> were used to create LUPE-2.0 model for pose estimation and behavior classification, respectively. Refer to GitHub of [DLC](https://github.com/DeepLabCut) or [A-SOiD](https://github.com/YttriLab/A-SOID) for further details. 
+The LUPE-2.0 App requires only a standard computer with enough RAM to support Streamlit-based data analysis and interactive visualizations.
 
-#### OS Requirements
-- This package is supported for *Windows* and *Mac* but can be run on *Linux* computers given additional installation of require packages.
+LUPE uses:
+- [DeepLabCut](https://github.com/DeepLabCut)<sup>1,2</sup> for pose estimation  
+- [A-SOiD](https://github.com/YttriLab/A-SOID)<sup>3</sup> for behavior classification
 
-#### Python Dependencies
-- For dependencies please refer to the requirements.txt file.
+These models are pre-trained and integrated into the app.  
+👉 **Be sure to follow [Step 2 in the Local Installation Guide]** to properly obtain and place the LUPE-A-SOiD model before running the app.
+
+> 💡 **Recommended Setup**  
+> We recommend installing all dependencies using [Anaconda](https://www.anaconda.com/products/distribution), a package and environment manager that simplifies Python project setup and avoids conflicts.
+
+### OS Requirements
+
+- ✅ **Windows** – fully supported  
+- ✅ **macOS** – fully supported  
+- ⚠️ **Linux** – supported with manual installation of certain packages
+
+### Python Dependencies
+- Please refer to the `requirements.txt` file for all necessary Python libraries.
 
 ---
 
@@ -51,7 +63,7 @@ To run “LUPE-2.0-App” on your own computer, follow these steps:
    cd LUPE-2.0-App
    
 2. #### Download the LUPE 2.0 A-SOiD Model [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the 'Model' folder.
-    > **Note**: Find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) for analyzing pose estimation for LUPE video data.
+    > **Note**: Find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) for analyzing and retrieving pose estimation for LUPE video data.
     
 3.	**Create the Conda Environment**
 
