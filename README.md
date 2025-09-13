@@ -1,8 +1,7 @@
 # LUPE 2.0 App
 
 > 🔬 **Looking for the full analysis pipeline in Jupyter Notebooks?**  
-If you prefer to run LUPE in a coding environment with detailed scripts for behavior analysis, head over to the [LUPE 2.0 Analysis Package](https://github.com/justin05423/LUPE-2.0-AnalysisPackage).  
-That repository provides the core analysis pipeline, reproducible Jupyter notebooks, and scripts to extend LUPE for advanced users who want direct control over the workflow.
+Head over to the [LUPE 2.0 Analysis Package](https://github.com/justin05423/LUPE-2.0-AnalysisPackage). That repository provides the core analysis pipeline, reproducible Jupyter notebooks, and scripts to extend LUPE for advanced users who want direct control over the workflow.
 
 <p align="center">
 <img src="public/logo.png" width="400">
