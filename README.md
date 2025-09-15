@@ -56,16 +56,20 @@ These models are pre-trained and integrated into the app.
 To run “LUPE-2.0-App” on your own computer, follow these steps:
 
 1. **Clone or Download the Repository**
+   > A repository is just the project’s folder on GitHub. You need a copy of that folder on your computer. **Clone** uses Git to make a local copy that stays linked to GitHub, so you can get updates later with `git pull`. **OR** grab a one-time ZIP of the files by clicking **[HERE](https://github.com/justin05423/LUPE-2.0-App/archive/refs/heads/main.zip)**. It’s not linked, so you won’t get updates unless you download again.
 
-   Open your terminal and run:
+   Open your terminal / command prompt and run:
    ```bash
    git clone https://github.com/justin05423/LUPE-2.0-App.git
+   ```
+   Then set directory of terminal/command prompt to this folder. Copy and run the following:
+    ```bash
    cd LUPE-2.0-App
-   
-2. #### Download the LUPE 2.0 A-SOiD Model [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the 'Model' folder.
-    > **Note**: Find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) for analyzing and retrieving pose estimation for LUPE video data.
+   ```
+3. #### Download the LUPE 2.0 A-SOiD Model [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the 'Model' folder, found in the now locally downloaded LUPE 2.0 App GitHub folder.
+    > **Note**: For analyzing and retrieving pose estimation for LUPE video data, find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) .
     
-3.	**Create the Conda Environment**
+4.	**Create the Conda Environment**
 
   	   For *MacOS*:
       ```bash
@@ -77,11 +81,11 @@ To run “LUPE-2.0-App” on your own computer, follow these steps:
       conda env create -f LUPE2_App_Win.yaml
       ```
 
-4. In terminal/command prompt, cd into "LUPE-2.0-App", then **Activate the LUPE2APP Environment**
+5. In terminal/command prompt, cd into "LUPE-2.0-App", then **Activate the LUPE2APP Environment**
     ```bash
   	conda activate LUPE2APP
   
-5. **Run the App 😎**
+6. **Run the App 😎**
     ```bash
   	streamlit run lupe_analysis.py
 
