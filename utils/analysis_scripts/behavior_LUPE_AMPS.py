@@ -9,6 +9,7 @@ import pickle
 from scipy.spatial.distance import cdist
 import seaborn as sns
 import streamlit as st
+import itertools
 
 
 def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
@@ -111,18 +112,21 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     output_dir_sec2 = os.path.join(base_dir, "figures", "behavior_LUPE-AMPS", "Section2")
     os.makedirs(output_dir_sec2, exist_ok=True)
     plt.figure(figsize=(8, 6))
-    condition_colors = {
-        selected_conditions[0]: 'green',
-        selected_conditions[1]: 'orange',
-        selected_conditions[2]: 'purple',
-        selected_conditions[3]: 'brown',
-        selected_conditions[4]: 'pink'
-    }
+
+    # Dynamically assign colors for any number of conditions
+    prop_cycle_colors = [c['color'] for c in plt.rcParams['axes.prop_cycle']]
+    colors_for_conds = list(itertools.islice(itertools.cycle(prop_cycle_colors), len(selected_conditions)))
+    condition_colors = dict(zip(selected_conditions, colors_for_conds))
+
     for condition in selected_conditions:
         idx = [i for i, c in enumerate(condition_labels) if c == condition]
-        plt.scatter(pc1_novel[idx], pc2_novel[idx],
-                    color=condition_colors.get(condition, 'gray'),
-                    label=condition, s=50)
+        if len(idx) == 0:
+            continue
+        plt.scatter(
+            pc1_novel[idx], pc2_novel[idx],
+            color=condition_colors.get(condition, 'gray'),
+            label=condition, s=50
+        )
     plt.xlabel("PC1 (Generalized Behavior Scale)")
     plt.ylabel("PC2 (Pain Behavior Scale)")
     plt.title("Novel Data PCA Projection by Condition")
@@ -148,6 +152,16 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     output_dir_sec3 = os.path.join(base_dir, "figures", "behavior_LUPE-AMPS", "Section3")
     os.makedirs(output_dir_sec3, exist_ok=True)
     states = [f"State {i + 1}" for i in range(6)]
+    # Human-readable labels per state category
+    category_map = {
+        1: "Pain Suppressed",
+        2: "Non-pain State",
+        3: "Pain Enhanced",
+        4: "Pain Enhanced",
+        5: "Non-pain State",
+        6: "Non-pain State",
+    }
+    states_display = [f"State {i} (" + category_map[i] + ")" for i in range(1, 7)]
 
     # ----- Fraction Occupancy Line Graph -----
     df_occ_animals = pd.DataFrame(novel_occ, columns=states)
@@ -156,13 +170,15 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     fig_occ, ax_occ = plt.subplots(figsize=(10, 6))
     for condition in selected_conditions:
         cond_data = df_occ_animals[df_occ_animals["Condition"] == condition]
+        if cond_data.empty:
+            continue
         means = cond_data[states].mean()
         sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
         xvals = np.arange(len(states))
         ax_occ.plot(xvals, means, marker='o', label=condition)
         ax_occ.fill_between(xvals, means - sem, means + sem, alpha=0.2)
     ax_occ.set_xticks(xvals)
-    ax_occ.set_xticklabels(states)
+    ax_occ.set_xticklabels(states_display, rotation=45, ha='right')
     ax_occ.set_xlabel("State")
     ax_occ.set_ylabel("Fraction Occupancy")
     ax_occ.set_title("Fraction Occupancy by Condition and State (Line Graph)")
@@ -184,13 +200,15 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     fig_bouts, ax_bouts = plt.subplots(figsize=(10, 6))
     for condition in selected_conditions:
         cond_data = df_bouts_animals[df_bouts_animals["Condition"] == condition]
+        if cond_data.empty:
+            continue
         means = cond_data[states].mean()
         sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
         xvals = np.arange(len(states))
         ax_bouts.plot(xvals, means, marker='o', label=condition)
         ax_bouts.fill_between(xvals, means - sem, means + sem, alpha=0.2)
     ax_bouts.set_xticks(xvals)
-    ax_bouts.set_xticklabels(states)
+    ax_bouts.set_xticklabels(states_display, rotation=45, ha='right')
     ax_bouts.set_xlabel("State")
     ax_bouts.set_ylabel("Number of Bouts")
     ax_bouts.set_title("Number of Bouts by Condition and State (Line Graph)")
@@ -212,13 +230,15 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     fig_boutdur, ax_boutdur = plt.subplots(figsize=(10, 6))
     for condition in selected_conditions:
         cond_data = df_boutdur_animals[df_boutdur_animals["Condition"] == condition]
+        if cond_data.empty:
+            continue
         means = cond_data[states].mean()
         sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
         xvals = np.arange(len(states))
         ax_boutdur.plot(xvals, means, marker='o', label=condition)
         ax_boutdur.fill_between(xvals, means - sem, means + sem, alpha=0.2)
     ax_boutdur.set_xticks(xvals)
-    ax_boutdur.set_xticklabels(states)
+    ax_boutdur.set_xticklabels(states_display, rotation=45, ha='right')
     ax_boutdur.set_xlabel("State")
     ax_boutdur.set_ylabel("Bout Duration (s)")
     ax_boutdur.set_title("Bout Duration by Condition and State (Line Graph)")

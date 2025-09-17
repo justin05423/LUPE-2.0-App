@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.9 (LUPE 2.0 App)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (LUPE 2.0 App)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="$USER_HOME$/anaconda3" project-jdk-type="Python SDK" />
 </project>
