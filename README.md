@@ -71,7 +71,7 @@ To run “LUPE-2.0-App” on your own computer, follow these steps:
    cd LUPE-2.0-App
    ```
 
-2. **Download the LUPE 2.0 A-SOiD Model**  
+2. **Download the LUPE 2.0 A-SOiD Model** (If not already present in 'model' folder when repository is downloaded/cloned.) 
    Download from [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the `Model` folder, found in the now locally downloaded LUPE 2.0 App GitHub folder.  
    > **Note**: For analyzing and retrieving pose estimation for LUPE video data, find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3).
 
