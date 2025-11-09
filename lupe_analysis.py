@@ -25,11 +25,6 @@ from utils.analysis_scripts.behavior_kinematx import behavior_kinematx
 from utils.analysis_scripts.behavior_binned_mouse_screening import behavior_binned_mouse_screening
 from utils.analysis_scripts.behavior_LUPE_AMPS import behavior_LUPE_AMPS
 
-import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
-import streamlit as st
-
-
 def run_notebook(notebook_path, output_path):
     try:
         # Load the notebook
