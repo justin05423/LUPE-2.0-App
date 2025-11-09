@@ -173,9 +173,15 @@ st.markdown("<p style='text-align: center; color: grey; '>" +
 # Sidebar Configuration
 with st.sidebar:
     if 'classifier' not in st.session_state:
-        model_name = HERE.joinpath('model/model.pkl')
-        with open(model_name, 'rb') as fr:
-            st.session_state['classifier'] = pickle.load(fr)
+        model_dir = HERE / 'model'
+        for model_filename in ['model.pkl', 'model', 'model_LUPE-AMPS.pkl', 'model_LUPE-AMPS']:
+            model_path = model_dir / model_filename
+            if model_path.exists():
+                with open(model_path, 'rb') as fr:
+                    st.session_state['classifier'] = pickle.load(fr)
+                break
+        else:
+            st.error("No model file found. Expected one of: model.pkl, model, model_LUPE-AMPS.pkl, model_LUPE-AMPS")
 
     if 'annotated_behaviors' not in st.session_state:
         st.session_state['annotated_behaviors'] = ['still',
