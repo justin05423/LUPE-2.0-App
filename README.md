@@ -20,7 +20,7 @@ Try LUPE today and unlock a new level of insights into animal behavior!
 ## Table of Contents
 - [System Requirements](#system-requirements)
 - [Local Installation Guide](#local-installation-guide)
-- [Updating LUPE-2.0-App](#updating-lupe-2-0-app)
+- [Updating LUPE-2.0-App](#updating-lupe-app)
 - [App Guide](#app-guide)
 - [Physical System Build](#physical-system-build)
 - [Contacting](#contacting)
@@ -100,7 +100,7 @@ To run “LUPE-2.0-App” on your own computer, follow these steps:
 
 ---
 
-# Updating LUPE-2.0-App
+# Updating LUPE App
 
 To update your local copy of LUPE-2.0-App to the latest version, follow these steps:
 
