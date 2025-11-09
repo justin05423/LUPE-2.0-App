@@ -18,6 +18,7 @@ def behavior_csv_classification(project_name, selected_groups=None, selected_con
 
     # Load behaviors
     behaviors = load_behaviors(behaviors_file)
+    behavior_labels = ['still', 'walking', 'rearing', 'grooming', 'licking hindpaw L', 'licking hindpaw R']
 
     # ------------------------------------------------------
     # Create CSVs for Per-Frame Behavior Classification
@@ -36,7 +37,8 @@ def behavior_csv_classification(project_name, selected_groups=None, selected_con
                 # Create a DataFrame: each row corresponds to a frame
                 df = pd.DataFrame({
                     'frame': range(1, len(data) + 1),
-                    'behavior': data
+                    'behavior': data,
+                    'behavior_label': [behavior_labels[i] for i in data]
                 })
                 csv_filename = f'{group}_{condition}_{file_key}.csv'
                 # Save DataFrame to CSV in the subfolder
@@ -60,7 +62,8 @@ def behavior_csv_classification(project_name, selected_groups=None, selected_con
             for file_key, data in files.items():
                 df = pd.DataFrame({
                     'time_seconds': [i / frame_rate for i in range(len(data))],
-                    'behavior': data
+                    'behavior': data,
+                    'behavior_label': [behavior_labels[i] for i in data]
                 })
                 csv_filename = f'{group}_{condition}_{file_key}.csv'
                 df.to_csv(os.path.join(output_dir_seconds, csv_filename), index=False)

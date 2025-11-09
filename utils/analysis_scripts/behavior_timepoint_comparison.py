@@ -18,6 +18,8 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
     if len(time_ranges) < 2:
         raise ValueError("At least two time ranges are required for comparison.")
 
+    behavior_labels = ['still', 'walking', 'rearing', 'grooming', 'licking hindpaw L', 'licking hindpaw R']
+
     # Define time labels
     time_labels = [f"{start // 60}-{end // 60} min" for start, end in time_ranges]
 
@@ -83,6 +85,7 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
                                 'Condition': condition,
                                 'Time Group': time_group,
                                 'Behavior': behavior,
+                                'Behavior Label': behavior_labels[int(behavior)],
                                 **behavior_metrics
                             })
                 analysis_df = pd.DataFrame(all_metrics)
@@ -117,13 +120,13 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
         if 'Time Group' not in combined_data.columns or 'Behavior' not in combined_data.columns:
             raise ValueError("The analysis files are missing required columns ('Time Group' or 'Behavior').")
 
-        summary = combined_data.groupby(['Time Group', 'Behavior']).agg({
+        summary = combined_data.groupby(['Time Group', 'Behavior', 'Behavior Label']).agg({
             'Fraction Time': ['mean', 'std'],  # Mean and standard deviation
             'Bouts per Minute': ['mean', 'std'],
             'Mean Bout Duration (s)': ['mean', 'std']
         }).reset_index()
 
-        summary.columns = ['Time Group', 'Behavior',
+        summary.columns = ['Time Group', 'Behavior', 'Behavior Label',
                            'Fraction Time (mean)', 'Fraction Time (std)',
                            'Bouts per Minute (mean)', 'Bouts per Minute (std)',
                            'Mean Bout Duration (mean)', 'Mean Bout Duration (std)']
