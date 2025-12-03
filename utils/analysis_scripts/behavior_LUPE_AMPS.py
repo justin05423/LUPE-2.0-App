@@ -102,7 +102,7 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
 
     # Section 2: PCA Projection and Scatter Plot
     print("Starting Section 2: PCA Projection and Scatter Plot")
-    pca_model_path = os.path.join("model", "model_LUPE-AMPS.pkl")
+    pca_model_path = os.path.join("model", "LUPE-AMPS", "model_LUPE-AMPS.pkl")
     with open(pca_model_path, 'rb') as f:
         pca = pickle.load(f)
     novel_projection = pca.transform(novel_occ)
