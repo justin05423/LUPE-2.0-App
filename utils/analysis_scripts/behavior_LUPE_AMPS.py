@@ -51,29 +51,37 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
                 except Exception as e:
                     print(f"      Skipping {baseFileName} due to error: {e}")
                     continue
-                data_array = data.to_numpy()
-                if data_array.shape[0] < original_length:
+
+                behav_col = pd.to_numeric(data.iloc[:, 1], errors="coerce").to_numpy()
+
+                if behav_col.shape[0] < original_length:
                     behav = np.concatenate([
-                        data_array[:data_array.shape[0], 1],
-                        np.zeros(original_length - data_array.shape[0])
+                        behav_col,
+                        np.zeros(original_length - behav_col.shape[0], dtype=behav_col.dtype),
                     ])
                 else:
-                    behav = data_array[:original_length, 1]
-                # Downsample (group every 3 frames: 60 -> 20 fps)
+                    behav = behav_col[:original_length]
+
+                # Downsample (group every 3 frames: 60 -> 20 fps) using NumPy instead of scipy.stats.mode
                 downsampled = []
                 window_size = int(1 / (dt / dtB))  # equals 3
                 for i in range(0, len(behav), window_size):
                     window = behav[i:i + window_size]
-                    if len(window) == 0:
+                    if window.size == 0:
                         break
-                    m = mode(window)
-                    value = m.mode[0] if hasattr(m.mode, '__iter__') else m.mode
+                    window = window[~np.isnan(window)]
+                    if window.size == 0:
+                        continue
+                    values, counts = np.unique(window.astype(int), return_counts=True)
+                    value = values[np.argmax(counts)]
                     downsampled.append(value)
-                downsampled = np.array(downsampled)
+                downsampled = np.asarray(downsampled, dtype=int)
+
                 if len(downsampled) < n_downsampled:
-                    downsampled = np.pad(downsampled, (0, n_downsampled - len(downsampled)), mode='constant')
+                    downsampled = np.pad(downsampled, (0, n_downsampled - len(downsampled)), mode="constant")
                 elif len(downsampled) > n_downsampled:
                     downsampled = downsampled[:n_downsampled]
+
                 occ_vector = [np.sum(downsampled == state) / len(downsampled) for state in range(6)]
                 novel_occ.append(occ_vector)
                 nBouts_vector = []
