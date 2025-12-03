@@ -110,7 +110,7 @@ To update your local copy of LUPE-2.0-App to the latest version, follow these st
    ```
 2. Pull the latest changes from the GitHub repository:
    ```bash
-   git pull origin main
+   git reset --hard origin/main
    ```
 3. If there are updates to the Conda environment files (`LUPE2_App.yaml` or `LUPE2_App_Win.yaml`), update your environment accordingly:
    ```bash
