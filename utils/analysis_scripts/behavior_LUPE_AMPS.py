@@ -174,17 +174,20 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     # ----- Fraction Occupancy Line Graph -----
     df_occ_animals = pd.DataFrame(novel_occ, columns=states)
     df_occ_animals["Condition"] = condition_labels
+    df_occ_animals["Group"] = group_labels
     df_occ_animals["Animal"] = anOrder_novel
     fig_occ, ax_occ = plt.subplots(figsize=(10, 6))
-    for condition in selected_conditions:
-        cond_data = df_occ_animals[df_occ_animals["Condition"] == condition]
-        if cond_data.empty:
-            continue
-        means = cond_data[states].mean()
-        sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
-        xvals = np.arange(len(states))
-        ax_occ.plot(xvals, means, marker='o', label=condition)
-        ax_occ.fill_between(xvals, means - sem, means + sem, alpha=0.2)
+    for group in selected_groups:
+        for condition in selected_conditions:
+            cond_data = df_occ_animals[(df_occ_animals["Group"] == group) & (df_occ_animals["Condition"] == condition)]
+            if cond_data.empty:
+                continue
+            means = cond_data[states].mean()
+            sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
+            xvals = np.arange(len(states))
+            label_str = f"{group} - {condition}"
+            ax_occ.plot(xvals, means, marker='o', label=label_str)
+            ax_occ.fill_between(xvals, means - sem, means + sem, alpha=0.2)
     ax_occ.set_xticks(xvals)
     ax_occ.set_xticklabels(states_display, rotation=45, ha='right')
     ax_occ.set_xlabel("State")
@@ -204,17 +207,20 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     # ----- Number of Bouts Line Graph -----
     df_bouts_animals = pd.DataFrame(novel_nBouts, columns=states)
     df_bouts_animals["Condition"] = condition_labels
+    df_bouts_animals["Group"] = group_labels
     df_bouts_animals["Animal"] = anOrder_novel
     fig_bouts, ax_bouts = plt.subplots(figsize=(10, 6))
-    for condition in selected_conditions:
-        cond_data = df_bouts_animals[df_bouts_animals["Condition"] == condition]
-        if cond_data.empty:
-            continue
-        means = cond_data[states].mean()
-        sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
-        xvals = np.arange(len(states))
-        ax_bouts.plot(xvals, means, marker='o', label=condition)
-        ax_bouts.fill_between(xvals, means - sem, means + sem, alpha=0.2)
+    for group in selected_groups:
+        for condition in selected_conditions:
+            cond_data = df_bouts_animals[(df_bouts_animals["Group"] == group) & (df_bouts_animals["Condition"] == condition)]
+            if cond_data.empty:
+                continue
+            means = cond_data[states].mean()
+            sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
+            xvals = np.arange(len(states))
+            label_str = f"{group} - {condition}"
+            ax_bouts.plot(xvals, means, marker='o', label=label_str)
+            ax_bouts.fill_between(xvals, means - sem, means + sem, alpha=0.2)
     ax_bouts.set_xticks(xvals)
     ax_bouts.set_xticklabels(states_display, rotation=45, ha='right')
     ax_bouts.set_xlabel("State")
@@ -234,17 +240,20 @@ def behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions):
     # ----- Bout Duration Line Graph -----
     df_boutdur_animals = pd.DataFrame(novel_boutDur, columns=states)
     df_boutdur_animals["Condition"] = condition_labels
+    df_boutdur_animals["Group"] = group_labels
     df_boutdur_animals["Animal"] = anOrder_novel
     fig_boutdur, ax_boutdur = plt.subplots(figsize=(10, 6))
-    for condition in selected_conditions:
-        cond_data = df_boutdur_animals[df_boutdur_animals["Condition"] == condition]
-        if cond_data.empty:
-            continue
-        means = cond_data[states].mean()
-        sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
-        xvals = np.arange(len(states))
-        ax_boutdur.plot(xvals, means, marker='o', label=condition)
-        ax_boutdur.fill_between(xvals, means - sem, means + sem, alpha=0.2)
+    for group in selected_groups:
+        for condition in selected_conditions:
+            cond_data = df_boutdur_animals[(df_boutdur_animals["Group"] == group) & (df_boutdur_animals["Condition"] == condition)]
+            if cond_data.empty:
+                continue
+            means = cond_data[states].mean()
+            sem = cond_data[states].std(ddof=1) / np.sqrt(len(cond_data))
+            xvals = np.arange(len(states))
+            label_str = f"{group} - {condition}"
+            ax_boutdur.plot(xvals, means, marker='o', label=label_str)
+            ax_boutdur.fill_between(xvals, means - sem, means + sem, alpha=0.2)
     ax_boutdur.set_xticks(xvals)
     ax_boutdur.set_xticklabels(states_display, rotation=45, ha='right')
     ax_boutdur.set_xlabel("State")
