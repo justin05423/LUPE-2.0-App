@@ -5,6 +5,9 @@ import extra_streamlit_components as stx
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 import streamlit as st
+import re
+import glob
+import pandas as pd
 from PIL import Image
 import pickle
 import importlib
@@ -172,20 +175,20 @@ with st.sidebar:
 
         candidate_names = ["model.pkl", "model"]
 
-        model_path = None
+        classifier_model_path = None
         for name in candidate_names:
             p = model_dir / name
             if p.exists():
-                model_path = p
+                classifier_model_path = p
                 break
 
-        if model_path is None:
+        if classifier_model_path is None:
             st.error(
                 "No model file found. Please check folder named 'model'. Expected one of: "
                 "model.pkl or model"
             )
         else:
-            with open(model_path, "rb") as fr:
+            with open(classifier_model_path, "rb") as fr:
                 st.session_state["classifier"] = pickle.load(fr)
 
     if 'annotated_behaviors' not in st.session_state:
@@ -575,42 +578,70 @@ def analysis_workflow():
         )
 
     time_ranges = []
+
     if analysis_type == "Behavior Timepoint Comparison":
         st.markdown("### Define Time Ranges (in minutes)")
+        st.caption(
+            "Use contiguous windows like 0-10, 10-20, 20-30. "
+            "Windows are interpreted as [start, end): start is included, end is excluded."
+        )
+
         num_timepoints = st.number_input(
-            "Enter the number of time ranges you want to compare (e.g., 2, 3, etc.):",
+            "How many time windows do you want to compare?",
             min_value=2,
             max_value=10,
             value=2,
             step=1,
             key="timepoint_number"
         )
-        # Collect raw strings first without validating to avoid early errors
-        time_range_strs = []
-        for i in range(num_timepoints):
-            s = st.text_input(f"Time range {i + 1} (e.g., 0-10):", key=f"time_range_{i}")
-            time_range_strs.append((s or "").strip())
 
-        # Only parse/validate when ALL fields are non-empty; otherwise, show a gentle hint
-        if all(s for s in time_range_strs):
-            parsed = []
-            valid = True
-            for s in time_range_strs:
-                try:
-                    start_min, end_min = map(int, s.split('-'))
-                    if start_min >= end_min:
-                        st.error(f"Error: Start time ({start_min}) must be less than end time ({end_min}).")
-                        valid = False
-                        break
-                    parsed.append((start_min * 60, end_min * 60))
-                except Exception:
-                    st.error("Invalid input format. Please enter the time range as 'start-end' (e.g., 0-10).")
+        parsed_min = []
+        valid = True
+
+        for i in range(int(num_timepoints)):
+            st.markdown(f"**Time window {i + 1}**")
+            c1, c2 = st.columns(2)
+
+            start_min = c1.number_input(
+                "Start (min)",
+                min_value=0,
+                value=i * 10,
+                step=1,
+                key=f"time_range_start_{i}"
+            )
+            end_min = c2.number_input(
+                "End (min)",
+                min_value=0,
+                value=(i + 1) * 10,
+                step=1,
+                key=f"time_range_end_{i}"
+            )
+
+            if end_min <= start_min:
+                st.error(f"Window {i + 1}: end must be greater than start.")
+                valid = False
+                break
+
+            parsed_min.append((int(start_min), int(end_min)))
+
+        # Enforce contiguity: end of one == start of next
+        if valid:
+            for i in range(1, len(parsed_min)):
+                prev_start, prev_end = parsed_min[i - 1]
+                cur_start, cur_end = parsed_min[i]
+
+                if cur_start != prev_end:
+                    st.error(
+                        f"Time ranges must be contiguous. "
+                        f"Expected window {i + 1} to start at {prev_end} min, got {cur_start} min."
+                    )
                     valid = False
                     break
-            if valid:
-                time_ranges = parsed
-        else:
-            st.caption("Enter each time range as 'start-end' (e.g., 0-10). No errors will show until all fields are filled.")
+
+        if valid:
+            # Convert minutes → seconds
+            time_ranges = [(s * 60, e * 60) for s, e in parsed_min]
+            st.success("Time ranges set: " + ", ".join([f"{s}-{e}" for s, e in parsed_min]))
 
     # Additional inputs for Behavior Kinematx analysis
     if analysis_type == "Behavior Kinematx":
@@ -709,81 +740,317 @@ def analysis_workflow():
 # LUPE-AMPS Analysis Workflow
 def pain_state_model_analysis():
     st.markdown("## LUPE-Affective-Motivational Pain Scale (AMPS)")
-    st.write("""\
+    st.write(
+        """\
 LUPE-AMPS is a dedicated module within the LUPE platform that focuses on uncovering latent behavioral states in mice — those subtle patterns that indicate pain or the effect of analgesia. This module uses a combination of behavioral metrics derived from video-based pose estimation and classification.
 
 The ultimate goal of LUPE-AMPS is to translate these behavioral signatures into a quantitative index known as the Affective-Motivational Pain Scale (AMPS). This index helps researchers measure pain in a more nuanced and objective way by correlating the observed behaviors with the subjective experience of pain.
-""")
+"""
+    )
 
     st.markdown("### Requirements")
-    st.markdown("""\
+    st.markdown(
+        """\
 The model is specifically trained to analyze localized hindpaw injuries. It leverages behavioral data collected from formalin, capsaicin, and spared nerve injuries to the hindpaw. For more details on the LUPE-AMPS module, please refer to the [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2).
-""")
+"""
+    )
 
     st.markdown("### How to Begin?")
-    st.markdown("""\
+    st.markdown(
+        """\
 1. **Complete LUPE Analysis Pipeline:** Ensure that you complete the entire pipeline, with particular attention to the *Behavior CSV Classification* step.
 2. **Organize/Upload CSVs:** Arrange and upload your CSV files according to the experimental conditions that need to be compared, including data from the uninjured/control group.
 3. **Configure Project and Conditions:** Name your project (using the dataset from which the LUPE pipeline was run) and set up your groups and conditions. (Enter groups and conditions in the sidebar if not already present.)
-""")
+"""
+    )
 
-    # New section for model option selection
+    # -----------------------------
+    # Model option selection
+    # -----------------------------
     st.markdown("### Select Model Option")
-    st.markdown("For novel analysis, you can choose to either use the original LUPE-AMPS model (see [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2)) or create a new LUPE-AMPS model on novel data.")
+    st.markdown(
+        "For novel analysis, you can choose to either use the original LUPE-AMPS model (see "
+        "[pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2)) "
+        "or create a new LUPE-AMPS model on novel data."
+    )
     model_option = st.radio(
         "Choose Model Option",
         options=[
             "Use original LUPE-AMPS model for novel analysis (see [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2))",
-            "Create new LUPE-AMPS model on novel data"
+            "Create new LUPE-AMPS model on novel data",
         ],
-        index=0
+        index=0,
+        key="amps_model_option",
     )
 
     if model_option == "Create new LUPE-AMPS model on novel data":
         st.markdown("### Create LUPE-AMPS Model")
-        st.markdown(
-            "🚧 **Under Construction:** Please check back later or contact the developers/authors for more information.")
+        st.markdown("🚧 **Under Construction:** Please check back later or contact the developers/authors for more information.")
+        return
 
-    elif model_option.startswith("Use original LUPE-AMPS model"):
+    # -----------------------------
+    # Must have project selected
+    # -----------------------------
+    if "current_project" not in st.session_state or not st.session_state["current_project"]:
+        st.warning("Please select or create a project in the Preprocessing Workflow tab first.")
+        return
 
-        # Check if a project has been selected/completed in the Preprocessing Workflow tab
+    st.markdown("### LUPE-AMPS Analysis 🚀")
 
-        if "current_project" not in st.session_state or not st.session_state["current_project"]:
-            st.warning("Please select or create a project in the Preprocessing Workflow tab first.")
+    # -----------------------------
+    # LUPE-AMPS model paths (separate from the sidebar classifier model)
+    # -----------------------------
+    amps_model_dir = HERE / "model" / "LUPE-AMPS"
+    amps_centroids_path = amps_model_dir / "panpainmodel30.mat"
+    amps_pca_params_path = amps_model_dir / "pain_scale_params.mat"
 
-            return
+    st.session_state["amps_model_dir"] = str(amps_model_dir)
+    st.session_state["amps_centroids_path"] = str(amps_centroids_path)
+    st.session_state["amps_pca_params_path"] = str(amps_pca_params_path)
 
-        st.markdown("### LUPE-AMPS Analysis 🚀")
-        st.markdown("### Select Groups and Conditions")
-        st.markdown("###### Enter groups and conditions in the sidebar if not already present.")
-        selected_groups = st.multiselect(
-            "Select Groups:",
-            options=list(st.session_state["group_names"].values()),
-            default=list(st.session_state["group_names"].values())[:1],
-            key="general_groups"
+    with st.expander("LUPE-AMPS model paths", expanded=False):
+        st.write(f"AMPS model dir: {amps_model_dir}")
+        st.write(f"Centroids/state model: {amps_centroids_path}  (exists={amps_centroids_path.exists()})")
+        st.write(f"Pain-scale params: {amps_pca_params_path}  (exists={amps_pca_params_path.exists()})")
+
+    # -----------------------------
+    # Groups / Conditions selection
+    # -----------------------------
+    st.markdown("### Select Groups and Conditions")
+    st.markdown("###### Enter groups and conditions in the sidebar if not already present.")
+
+    group_options = list(st.session_state.get("group_names", {}).values())
+    condition_options = st.session_state.get("condition_names", [])
+
+    if len(group_options) == 0:
+        st.warning("No groups found. Please define groups in the sidebar / project setup first.")
+        return
+    if len(condition_options) == 0:
+        st.warning("No conditions found. Please define conditions in the sidebar / project setup first.")
+        return
+
+    selected_groups = st.multiselect(
+        "Select Groups:",
+        options=group_options,
+        default=group_options[:1],
+        key="amps_selected_groups",
+    )
+
+    selected_conditions = st.multiselect(
+        "Select Conditions:",
+        options=condition_options,
+        default=condition_options[:1],
+        key="amps_selected_conditions",
+    )
+
+    # -----------------------------
+    # Injury site input
+    # -----------------------------
+    st.markdown("### Injury Site")
+    st.caption(
+        "LUPE-AMPS expects the *injured paw lick* for all mice to be treated consistently. "
+        "If injury was on the RIGHT hindpaw, the analysis will swap left/right lick labels so that "
+        "the injured paw is always handled as the injured channel downstream."
+    )
+
+    injury_site = st.radio(
+        "Which hindpaw was injured?",
+        options=[0, 1],
+        format_func=lambda x: "0 — Left hindpaw" if x == 0 else "1 — Right hindpaw",
+        index=0,
+        key="amps_injury_site",
+    )
+
+    # -----------------------------
+    # TIMEPOINT COMPARISON (Optional)
+    # -----------------------------
+    st.markdown("### Optional - Timepoint Comparison")
+    st.caption(
+        "If enabled, LUPE-AMPS will compute the same cohort-level outputs "
+        "(AMPS, state statistics, behavior statistics, transitions) "
+        "within user-defined time windows also."
+    )
+
+    # Infer available recording length (minutes) from the first readable behavior CSV.
+    # This avoids hard-coding a fixed duration (e.g., 30 min) and supports variable-length recordings.
+    # Assumes: 1 row = 1 frame at 60 fps in the raw-classification CSVs.
+    project_name = st.session_state["current_project"]
+    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+    base_data_dir = os.path.join(base_dir, "figures", "behaviors_csv_raw-classification", "frames")
+
+    # Try to infer recording length (minutes) from the first readable behavior CSV
+    # (assumes 1 row = 1 frame at 60 fps in raw-classification CSVs).
+    sampling_rate_fps = 60.0
+    recording_length_min_available = None
+
+    try:
+        candidate_csvs = []
+        for g in selected_groups:
+            for c in selected_conditions:
+                candidate_csvs.extend(
+                    glob.glob(os.path.join(base_data_dir, g, c, "*.csv"))
+                )
+
+        candidate_csvs = sorted(candidate_csvs)
+        for fp in candidate_csvs:
+            try:
+                df0 = pd.read_csv(fp)
+                n_frames = int(df0.shape[0])
+                if n_frames > 0:
+                    recording_length_min_available = n_frames / sampling_rate_fps / 60.0
+                    break
+            except Exception:
+                continue
+    except Exception:
+        recording_length_min_available = None
+
+    if recording_length_min_available is None:
+        # Fallback if we can't infer it yet
+        recording_length_min_available = float(st.session_state.get("amps_recording_length_min_available", 30))
+        st.warning(
+            "Could not infer recording length from behavior CSVs yet. "
+            "Using fallback duration for time-window setup."
         )
-        selected_conditions = st.multiselect(
-            "Select Conditions:",
-            options=st.session_state["condition_names"],
-            default=st.session_state["condition_names"][:1],
-            key="general_conditions"
-        )
 
-        if st.button("Run LUPE‑AMPS Analysis"):
-            with st.spinner("Running LUPE‑AMPS analysis..."):
+    # Persist for downstream UI defaults
+    st.session_state["amps_recording_length_min_available"] = float(recording_length_min_available)
+
+    use_timepoint_comparison = st.toggle(
+        "Would you like to compare specific timepoints within your dataset?",
+        value=False,
+        key="amps_use_timepoint_comparison",
+    )
+
+    time_ranges_min = []
+    time_labels = []
+    timepoint_error = None
+
+    if use_timepoint_comparison:
+        with st.expander("Configure time windows", expanded=True):
+            st.caption(
+                f"Define one or more time windows in minutes (0–{recording_length_min_available:.2f}). "
+                "Windows are clipped to the recording length if needed."
+            )
+
+            st.info(
+                "Tip: Use contiguous windows like 0-10, 10-20, 20-30 for full coverage. "
+                "Windows are interpreted as start-inclusive and end-exclusive in slicing (standard Python)."
+            )
+
+            num_timepoints = st.number_input(
+                "How many time windows do you want to compare?",
+                min_value=1,
+                max_value=12,
+                value=2,
+                step=1,
+                key="amps_num_timepoints",
+            )
+
+            for i in range(int(num_timepoints)):
+                st.markdown(f"**Time window {i + 1}**")
+
+                c1, c2 = st.columns(2)
+                start_min = c1.number_input(
+                    "Start (min)",
+                    min_value=0.0,
+                    max_value=float(recording_length_min_available),
+                    value=float(min(i * 10, recording_length_min_available)),
+                    step=1.0,
+                    key=f"amps_tp_start_{i}",
+                )
+                end_min = c2.number_input(
+                    "End (min)",
+                    min_value=0.0,
+                    max_value=float(recording_length_min_available),
+                    value=float(min((i + 1) * 10, recording_length_min_available)),
+                    step=1.0,
+                    key=f"amps_tp_end_{i}",
+                )
+
+                # Validation
+                if start_min < 0:
+                    timepoint_error = f"Window {i + 1}: start must be ≥ 0."
+                    continue
+
+                if end_min <= start_min:
+                    timepoint_error = f"Window {i + 1}: end must be greater than start."
+                    continue
+
+                # Clip to available recording length
+                if end_min > recording_length_min_available:
+                    end_min = float(recording_length_min_available)
+
+                # Re-check after clipping
+                if end_min <= start_min:
+                    timepoint_error = f"Window {i + 1}: window becomes empty after clipping."
+                    continue
+
+                time_ranges_min.append((start_min, end_min))
+                time_labels.append(f"{start_min:g}-{end_min:g} min")
+
+            # Optional: lightweight “coverage” check (not enforced)
+            if len(time_ranges_min) > 0 and timepoint_error is None:
+                latest_end = max(b for _, b in time_ranges_min)
+                if latest_end < recording_length_min_available - 1e-6:
+                    st.warning(
+                        f"Your windows end at {latest_end:g} min, but the recording is "
+                        f"{recording_length_min_available:.2f} min. (That’s okay if intentional.)"
+                    )
+
+            if timepoint_error:
+                st.error(timepoint_error)
+
+            if len(time_ranges_min) > 0:
+                st.markdown("**Time windows defined:**")
+                for lbl, (smin, emin) in zip(time_labels, time_ranges_min):
+                    st.write(f"• {lbl} → ({smin:g}, {emin:g}) min")
+
+    # -----------------------------
+    # Run button
+    # -----------------------------
+    run_disabled = (len(selected_groups) == 0) or (len(selected_conditions) == 0) or (use_timepoint_comparison and (timepoint_error is not None))
+
+    if st.button("Run LUPE-AMPS Analysis", disabled=run_disabled):
+        with st.spinner("Running LUPE-AMPS analysis..."):
+            try:
+                project_name = st.session_state["current_project"]
                 try:
-                    project_name = st.session_state["current_project"]
-                    behavior_LUPE_AMPS(project_name, selected_groups, selected_conditions)
-                    st.success("LUPE‑AMPS analysis completed! See project directory to see the results.")
-                except Exception as e:
-                    st.error(f"Error during LUPE‑AMPS analysis: {e}")
+                    behavior_LUPE_AMPS(
+                        project_name=project_name,
+                        selected_groups=selected_groups,
+                        selected_conditions=selected_conditions,
+                        injury_site=injury_site,
+                        use_timepoint_comparison=use_timepoint_comparison,
+                        time_ranges_min=time_ranges_min,
+                        time_labels=time_labels,
+                        model_path=str(amps_centroids_path),
+                        pca_model_path=str(amps_pca_params_path),
+                    )
+                except TypeError:
+                    # Backward-compatible: older versions of behavior_LUPE_AMPS may not accept these kwargs
+                    behavior_LUPE_AMPS(
+                        project_name=project_name,
+                        selected_groups=selected_groups,
+                        selected_conditions=selected_conditions,
+                        injury_site=injury_site,
+                        use_timepoint_comparison=use_timepoint_comparison,
+                        time_ranges_min=time_ranges_min,
+                        time_labels=time_labels,
+                    )
+                st.success("LUPE-AMPS analysis completed! See project directory to see the results.")
+            except Exception as e:
+                st.error(f"Error during LUPE-AMPS analysis: {e}")
 
-
+    # Footer
     bottom_cont = st.container()
     with bottom_cont:
         st.markdown("""---""")
-        st.markdown(f"<h1 style='text-align: left; color: gray; font-size:16px; font-family:Avenir; font-weight:normal'>LUPE-AMPS was developed by Sophie Rogers, and this version of the code has been adapted and reproduced by Justin James.</h1>", unsafe_allow_html=True)
-
+        st.markdown(
+            "<h1 style='text-align: left; color: gray; font-size:16px; font-family:Avenir; font-weight:normal'>"
+            "LUPE-AMPS was developed by Sophie Rogers, and this version of the code has been adapted and reproduced by Justin James."
+            "</h1>",
+            unsafe_allow_html=True,
+        )
 
 # Welcome Page
 def main():
