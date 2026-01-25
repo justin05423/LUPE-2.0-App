@@ -57,7 +57,8 @@ def behavior_location(project_name, selected_groups, selected_conditions):
     for b, behav_name in enumerate(behavior_names):
         count = 0
         # Create a figure with a black background
-        fig = plt.figure(facecolor='#000000', figsize=(10, 11))
+        fig = plt.figure(facecolor='#000000', figsize=(10, rows * 2.5))
+        fig.suptitle(behav_name, color=behavior_colors[b], fontsize=16, fontweight='bold', y=0.98)
 
         # Loop over each group and condition combination
         for row in range(rows):
@@ -102,12 +103,6 @@ def behavior_location(project_name, selected_groups, selected_conditions):
                         ax.imshow(np.nanmean(hist2d_all, axis=0).T,
                                   extent=extent, origin='lower', cmap=cm)
 
-                # Draw a legend indicating the behavior name
-                patches = [mpatches.Patch(color=behavior_colors[b], label=behav_name)]
-                lgd = ax.legend(handles=patches, facecolor="#000000", frameon=False, prop={"size": 11},
-                                ncol=1, bbox_to_anchor=(0.9, 0.9), loc='lower center', edgecolor='w')
-                for text in lgd.get_texts():
-                    text.set_color("#FFFFFF")
                 # Add the circle patch to the axis
                 ax.add_patch(circle)
                 ax.set_aspect('equal')
@@ -116,13 +111,11 @@ def behavior_location(project_name, selected_groups, selected_conditions):
                 plt.axis('equal')
                 ax.set_title(f'{selected_group} - {selected_condition}', color='white', fontsize=10)
                 count += 1
-                # Optional: remove extra axes for specific positions if needed.
-                if (row, col) in [(5, 1), (5, 2), (6, 1), (6, 2)]:
-                    fig.delaxes(ax)
 
-        # Save the figure for the current behavior
-        save_path = os.path.join(directory_path, f"behavior_location_{behav_name}_{project_name}.svg")
-        fig.savefig(save_path, dpi=600, bbox_inches='tight')
+        # Save as SVG
+        save_path_svg = os.path.join(directory_path, f"behavior_location_{behav_name}_{project_name}.svg")
+        fig.savefig(save_path_svg, dpi=600, bbox_inches='tight')
+
         # Append the figure to the list
         figs.append(fig)
 

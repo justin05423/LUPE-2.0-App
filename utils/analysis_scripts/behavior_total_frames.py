@@ -50,14 +50,7 @@ def behavior_total_frames(project_name, selected_groups, selected_conditions):
 
     # Loop over each group and condition.
     for row in range(rows):
-        # (Optional) For rows > 4, you might want to limit the number of columns.
-        current_cols = cols
-        if row > 4 and cols > 1:
-            for extra in range(1, cols):
-                fig.delaxes(ax[row, extra])
-            current_cols = 1
-
-        for col in range(current_cols):
+        for col in range(cols):
             selected_group = selected_groups[row]
             selected_condition = selected_conditions[col]
 

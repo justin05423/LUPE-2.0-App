@@ -54,7 +54,7 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
     # Determine grid size based on selected groups and conditions
     rows = len(selected_groups)
     cols = len(selected_conditions)
-    fig, ax = plt.subplots(rows, cols, figsize=(10, 11), sharex=False, sharey=True)
+    fig, ax = plt.subplots(rows, cols, figsize=(12, rows * 3), sharex=False, sharey=True)
 
     # Wrap axes into a 2D array if necessary
     if rows == 1 and cols == 1:
@@ -66,15 +66,7 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
 
     # Loop over each group (row) and condition (column)
     for row in range(rows):
-        # (Optional: if more than 4 groups, you might want to adjust the number of columns)
-        current_cols = cols
-        if row > 4 and cols > 1:
-            # Remove extra axes if present (customize as needed)
-            for extra in range(1, cols):
-                fig.delaxes(ax[row, extra])
-            current_cols = 1
-
-        for col in range(current_cols):
+        for col in range(cols):
             selected_group = selected_groups[row]
             selected_condition = selected_conditions[col]
 
@@ -116,7 +108,6 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                 if row == rows - 1:
                     ax[row, col].set_xlabel('Behavior duration (s)')
                 ax[row, col].set_title(f'{selected_group} - {selected_condition}')
-                ax[row, col].set_aspect('equal', adjustable='box')
                 ax[row, col].set_xlim(0, 6)
                 # Remove the legend if it exists
                 legend = ax[row, col].get_legend()
@@ -129,7 +120,7 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                 ax[row, col].set_title(f'{selected_group} - {selected_condition}')
 
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    # Save the overall figure as an SVG file
+    # Save as SVG file
     svg_path = os.path.join(directory_path, f"behavior_durations_{project_name}.svg")
     fig.savefig(svg_path, dpi=600, bbox_inches='tight')
 
@@ -162,8 +153,5 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
     all_file_durations_df = pd.DataFrame(all_file_durations)
     output_csv_path = os.path.join(directory_path, f"total_average_std_durations_per_file_{project_name}.csv")
     all_file_durations_df.to_csv(output_csv_path, index=False)
-
-    # Optionally, you could log or print the output CSV path.
-    # print(f"File summary saved to {output_csv_path}")
 
     return fig

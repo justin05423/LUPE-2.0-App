@@ -61,7 +61,7 @@ def behavior_transitions(project_name, selected_groups, selected_conditions):
     def plot_heatmaps(annot, fmt, save_path):
         rows_num = len(selected_groups)
         cols_num = len(selected_conditions)
-        fig, ax = plt.subplots(rows_num, cols_num, figsize=(10, 11), sharex=False, sharey=True)
+        fig, ax = plt.subplots(rows_num, cols_num, figsize=(cols_num * 6, rows_num * 4), sharex=False, sharey=False)
 
         # Ensure ax is a 2D array for indexing
         if rows_num == 1 and cols_num == 1:
@@ -72,13 +72,7 @@ def behavior_transitions(project_name, selected_groups, selected_conditions):
             ax = np.array([[a] for a in ax])
 
         for r in range(rows_num):
-            current_cols = cols_num
-            # (Optional: if there are more than 4 groups, you may limit columns)
-            if r > 4 and cols_num > 1:
-                for extra in range(1, cols_num):
-                    fig.delaxes(ax[r, extra])
-                current_cols = 1
-            for c in range(current_cols):
+            for c in range(cols_num):
                 group = selected_groups[r]
                 condition = selected_conditions[c]
                 all_count_tm = np.zeros((len(behavior_names), len(behavior_names)))
@@ -117,7 +111,6 @@ def behavior_transitions(project_name, selected_groups, selected_conditions):
                     if r == rows_num - 1:
                         ax[r, c].set_xlabel('Next behavior')
                     ax[r, c].set_title(f'{group} - {condition}')
-                    ax[r, c].set_aspect('equal', adjustable='box')
                 else:
                     ax[r, c].text(0.5, 0.5, f"Data not found for\n{group} - {condition}",
                                   horizontalalignment='center', verticalalignment='center')

@@ -109,9 +109,10 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
 
         fig.legend(handles, labels, loc='lower center', ncol=len(behavior_names), bbox_to_anchor=(0.5, -0.05))
 
-        # Save the figure (one file per group)
-        save_path = os.path.join(directory_path, f"behavior_binned-ratio-timeline_{project_name}_{selected_group}.svg")
-        plt.savefig(save_path, format='svg', bbox_inches='tight')
+        # Save SVG
+        save_path_svg = os.path.join(directory_path,
+                                     f"behavior_binned-ratio-timeline_{project_name}_{selected_group}.svg")
+        plt.savefig(save_path_svg, format='svg', bbox_inches='tight')
 
         # Add the figure to the list
         figs.append(fig)

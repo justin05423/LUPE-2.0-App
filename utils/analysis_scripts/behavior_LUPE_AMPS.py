@@ -1734,6 +1734,7 @@ def behavior_LUPE_AMPS(
             output_dir_section9 = os.path.join(output_base_dir, 'Section9_AMPS')
             os.makedirs(output_dir_section9, exist_ok=True)
 
+            # Define condition colors FIRST (before try/except)
             unique_conditions_s9 = sorted(list(set(condition_labels)))
             try:
                 if sns is not None:
@@ -1744,10 +1745,11 @@ def behavior_LUPE_AMPS(
             except Exception:
                 prop_cycle_colors = [c["color"] for c in plt.rcParams["axes.prop_cycle"]]
                 if len(prop_cycle_colors) < len(unique_conditions_s9):
-                    prop_cycle_colors = (prop_cycle_colors * (len(unique_conditions_s9) // max(1, len(prop_cycle_colors)) + 1))
+                    prop_cycle_colors = (
+                                prop_cycle_colors * (len(unique_conditions_s9) // max(1, len(prop_cycle_colors)) + 1))
                 condition_colors_s9 = dict(zip(unique_conditions_s9, prop_cycle_colors[: len(unique_conditions_s9)]))
 
-            # Load PCA parameters (preferred) or fit PCA on current data (fallback)
+            # NOW load PCA parameters
             print(f"[LUPE-AMPS] Loading PCA parameters from: {pca_model_path}")
             try:
                 if pca_model_path is None or str(pca_model_path).strip() == "":
@@ -1771,15 +1773,14 @@ def behavior_LUPE_AMPS(
             if pca_coeff is None or pca_mu is None:
                 print("[LUPE-AMPS] Could not compute PCA projection — skipping Section 9.")
             else:
-                # Project to PC space using STATE OCCUPANCY (n_animals x n_states)
+                # ALL OF YOUR AMPS CODE MUST BE INSIDE THIS ELSE BLOCK
+
+                # Project to PC space
                 pca_projection = project_to_pc_space(total_fraction_state, pca_coeff, pca_mu)
-                general_behavior_scale = pca_projection[:, 0]  # PC1
-                amps = pca_projection[:, 1]  # PC2 - Affective-Motivational Pain Scale
+                general_behavior_scale = pca_projection[:, 0]
+                amps = pca_projection[:, 1]
 
-                print("\n[LUPE-AMPS] AMPS Scores Calculated:")
-                print(f"  General Behavior Scale (PC1) range: [{general_behavior_scale.min():.3f}, {general_behavior_scale.max():.3f}]")
-                print(f"  AMPS (PC2) range: [{amps.min():.3f}, {amps.max():.3f}]")
-
+                # Save all AMPS scores
                 df_amps = pd.DataFrame({
                     'Animal': animal_names,
                     'Group': group_labels,
@@ -1789,69 +1790,117 @@ def behavior_LUPE_AMPS(
                 })
                 df_amps.to_csv(os.path.join(output_dir_section9, f'{project_name}_amps_scores.csv'), index=False)
 
-                fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+                # Generate figures PER GROUP
+                for group in unique_groups:
+                    group_mask = np.array([g == group for g in group_labels])
+                    n_animals_group = int(np.sum(group_mask))
 
-                # 9a) Scatter by condition
-                ax = axes[0]
-                for cond in unique_conditions_s9:
-                    mask = np.array([c == cond for c in condition_labels])
-                    ax.scatter(
-                        general_behavior_scale[mask],
-                        amps[mask],
-                        c=[condition_colors_s9[cond]],
-                        label=cond,
-                        s=50,
-                        alpha=0.7,
-                    )
-                ax.set_xlabel('PC1: General Behavior Scale')
-                ax.set_ylabel('PC2: Affective-Motivational Pain Scale')
-                ax.set_title('PCA Projection by Condition')
-                ax.legend(frameon=False)
+                    if n_animals_group == 0:
+                        continue
 
-                # 9a) Bar plot for PC1
-                ax = axes[1]
-                means, sems = [], []
-                for cond in unique_conditions_s9:
-                    mask = np.array([c == cond for c in condition_labels])
-                    data = general_behavior_scale[mask]
-                    means.append(float(np.mean(data)) if len(data) else np.nan)
-                    sems.append(float(np.std(data, ddof=1) / np.sqrt(len(data))) if len(data) > 1 else 0.0)
+                    group_conditions = sorted(
+                        list(set([c for c, g in zip(condition_labels, group_labels) if g == group])))
 
-                x = np.arange(len(unique_conditions_s9))
-                ax.bar(x, means, yerr=sems, capsize=5, color='lightgray', edgecolor='black')
-                for i, cond in enumerate(unique_conditions_s9):
-                    mask = np.array([c == cond for c in condition_labels])
-                    data = general_behavior_scale[mask]
-                    ax.scatter(np.ones(len(data)) * i + 0.15, data, c=[condition_colors_s9[cond]], s=30, alpha=0.7)
-                ax.set_xticks(x)
-                ax.set_xticklabels(unique_conditions_s9, rotation=45, ha='right')
-                ax.set_ylabel('Score')
-                ax.set_title('PC1: General Behavior Scale')
+                    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
-                # 9a) Bar plot for AMPS (PC2)
-                ax = axes[2]
-                means, sems = [], []
-                for cond in unique_conditions_s9:
-                    mask = np.array([c == cond for c in condition_labels])
-                    data = amps[mask]
-                    means.append(float(np.mean(data)) if len(data) else np.nan)
-                    sems.append(float(np.std(data, ddof=1) / np.sqrt(len(data))) if len(data) > 1 else 0.0)
+                    # 9a) Scatter by condition
+                    ax = axes[0]
+                    for cond in group_conditions:
+                        mask = np.array([(g == group and c == cond) for g, c in zip(group_labels, condition_labels)])
+                        if np.sum(mask) == 0:
+                            continue
+                        ax.scatter(
+                            general_behavior_scale[mask],
+                            amps[mask],
+                            c=[condition_colors_s9.get(cond, 'gray')],
+                            label=f'{cond} (n={int(np.sum(mask))})',
+                            s=50,
+                            alpha=0.7,
+                        )
+                    ax.set_xlabel('PC1: General Behavior Scale')
+                    ax.set_ylabel('PC2: Affective-Motivational Pain Scale')
+                    ax.set_title(f'PCA Projection — {group}')
+                    ax.legend(frameon=False)
 
-                x = np.arange(len(unique_conditions_s9))
-                ax.bar(x, means, yerr=sems, capsize=5, color='lightgray', edgecolor='black')
-                for i, cond in enumerate(unique_conditions_s9):
-                    mask = np.array([c == cond for c in condition_labels])
-                    data = amps[mask]
-                    ax.scatter(np.ones(len(data)) * i + 0.15, data, c=[condition_colors_s9[cond]], s=30, alpha=0.7)
-                ax.set_xticks(x)
-                ax.set_xticklabels(unique_conditions_s9, rotation=45, ha='right')
-                ax.set_ylabel('Score')
-                ax.set_title('PC2: AMPS (Pain Scale)')
+                    # 9b) Bar plot for PC1
+                    ax = axes[1]
+                    means, sems = [], []
+                    for cond in group_conditions:
+                        mask = np.array([(g == group and c == cond) for g, c in zip(group_labels, condition_labels)])
+                        data = general_behavior_scale[mask]
+                        means.append(float(np.mean(data)) if len(data) else np.nan)
+                        sems.append(float(np.std(data, ddof=1) / np.sqrt(len(data))) if len(data) > 1 else 0.0)
 
-                fig.tight_layout()
-                fig.savefig(os.path.join(output_dir_section9, f'{project_name}_amps_projection.png'), dpi=300)
-                fig.savefig(os.path.join(output_dir_section9, f'{project_name}_amps_projection.svg'))
-                plt.close(fig)
+                    x = np.arange(len(group_conditions))
+                    ax.bar(x, means, yerr=sems, capsize=5, color='lightgray', edgecolor='black')
+                    for i, cond in enumerate(group_conditions):
+                        mask = np.array([(g == group and c == cond) for g, c in zip(group_labels, condition_labels)])
+                        data = general_behavior_scale[mask]
+                        if len(data) > 0:
+                            ax.scatter(np.ones(len(data)) * i + 0.15, data, c=[condition_colors_s9.get(cond, 'gray')],
+                                       s=30, alpha=0.7)
+                    ax.set_xticks(x)
+                    ax.set_xticklabels(group_conditions, rotation=45, ha='right')
+                    ax.set_ylabel('Score')
+                    ax.set_title(f'PC1: General Behavior Scale — {group}')
+
+                    # 9c) Bar plot for AMPS (PC2)
+                    ax = axes[2]
+                    means, sems = [], []
+                    for cond in group_conditions:
+                        mask = np.array([(g == group and c == cond) for g, c in zip(group_labels, condition_labels)])
+                        data = amps[mask]
+                        means.append(float(np.mean(data)) if len(data) else np.nan)
+                        sems.append(float(np.std(data, ddof=1) / np.sqrt(len(data))) if len(data) > 1 else 0.0)
+
+                    x = np.arange(len(group_conditions))
+                    ax.bar(x, means, yerr=sems, capsize=5, color='lightgray', edgecolor='black')
+                    for i, cond in enumerate(group_conditions):
+                        mask = np.array([(g == group and c == cond) for g, c in zip(group_labels, condition_labels)])
+                        data = amps[mask]
+                        if len(data) > 0:
+                            ax.scatter(np.ones(len(data)) * i + 0.15, data, c=[condition_colors_s9.get(cond, 'gray')],
+                                       s=30, alpha=0.7)
+                    ax.set_xticks(x)
+                    ax.set_xticklabels(group_conditions, rotation=45, ha='right')
+                    ax.set_ylabel('Score')
+                    ax.set_title(f'PC2: AMPS (Pain Scale) — {group}')
+
+                    fig.suptitle(f'AMPS Analysis — {group}', fontsize=14, fontweight='bold', y=1.02)
+                    fig.tight_layout()
+
+                    fig.savefig(os.path.join(output_dir_section9, f'{project_name}_amps_projection_{group}.png'),
+                                dpi=300, bbox_inches='tight')
+                    fig.savefig(os.path.join(output_dir_section9, f'{project_name}_amps_projection_{group}.svg'),
+                                bbox_inches='tight')
+                    plt.close(fig)
+
+                    print(f"[LUPE-AMPS]   - Saved AMPS projection for {group}")
+
+                # Summary CSV
+                amps_summary = []
+                for group in unique_groups:
+                    for cond in unique_conditions_s9:
+                        mask = np.array([(g == group and c == cond) for g, c in zip(group_labels, condition_labels)])
+                        n_animals_subset = int(np.sum(mask))
+                        if n_animals_subset == 0:
+                            continue
+                        amps_summary.append({
+                            'Group': group,
+                            'Condition': cond,
+                            'PC1_Mean': float(np.mean(general_behavior_scale[mask])),
+                            'PC1_SEM': float(np.std(general_behavior_scale[mask], ddof=1) / np.sqrt(
+                                n_animals_subset)) if n_animals_subset > 1 else 0.0,
+                            'PC2_AMPS_Mean': float(np.mean(amps[mask])),
+                            'PC2_AMPS_SEM': float(np.std(amps[mask], ddof=1) / np.sqrt(
+                                n_animals_subset)) if n_animals_subset > 1 else 0.0,
+                            'N_Animals': n_animals_subset,
+                        })
+
+                pd.DataFrame(amps_summary).to_csv(
+                    os.path.join(output_dir_section9, f'{project_name}_amps_summary_by_group.csv'),
+                    index=False,
+                )
 
                 print(f"[LUPE-AMPS] AMPS results saved to: {output_dir_section9}")
 

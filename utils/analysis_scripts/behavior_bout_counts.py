@@ -67,12 +67,7 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
         ax = np.array([[a] for a in ax])
 
     for row in range(rows):
-        current_cols = cols
-        if row > 4 and cols > 1:
-            for extra in range(1, cols):
-                fig.delaxes(ax[row, extra])
-            current_cols = 1
-        for col in range(current_cols):
+        for col in range(cols):
             selected_group = selected_groups[row]
             selected_condition = selected_conditions[col]
 
@@ -132,8 +127,9 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
                 ax[row, col].set_title(f'{selected_group} - {selected_condition}')
 
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    save_path = os.path.join(directory_path, f"behavior_counts_{project_name}.svg")
-    fig.savefig(save_path, dpi=600, bbox_inches='tight')
+    # Save as SVG
+    save_path_svg = os.path.join(directory_path, f"behavior_counts_{project_name}.svg")
+    fig.savefig(save_path_svg, dpi=600, bbox_inches='tight')
 
     ### Part 2: Additional Analysis – Raw Frequency CSVs ###
     raw_directory_path = os.path.join(directory_path, "behavior_instance-counts_raw")
