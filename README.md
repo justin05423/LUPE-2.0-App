@@ -17,9 +17,21 @@ With in-depth analysis and interactive visuals, as well as downloadable CSVs for
 Try LUPE today and unlock a new level of insights into animal behavior!
 </p>
 
+## 📄 Associated Publication
+
+LUPE is described and validated in our recent peer-reviewed publication in *Nature*:
+
+> **Oswell, Rogers, James et al.**  
+> *Mimicking opioid analgesia in cortical pain circuits*  
+> **Nature (2025)**  
+> 🔗 https://www.nature.com/articles/s41586-025-09908-w
+
+If you use LUPE in your research, please cite this work.
+
 ## Table of Contents
 - [System Requirements](#system-requirements)
-- [Local Installation Guide](#local-installation-guide)
+- [Local Installation & App Start Guide](#local-installation--app-start-guide)
+  - [One-Click App Launch (Recommended)](#-one-click-app-launch-recommended)
 - [Updating App](#updating-lupe-app)
 - [App Guide](#app-guide)
 - [Physical System Build](#physical-system-build)
@@ -55,12 +67,14 @@ These models are pre-trained and integrated into the app.
 
 ---
 
-# Local Installation Guide
+# Local Installation & App Start Guide
 
-To run “LUPE-2.0-App” on your own computer, follow these steps:
+### To install “LUPE-2.0-App” on your own computer, follow these steps:
 
 1. **Clone or Download the Repository**  
-   A repository is just the project’s folder on GitHub. You need a copy of that folder on your computer. **Clone** uses Git to make a local copy that stays linked to GitHub, so you can get updates later with `git pull`. **OR** grab a one-time ZIP of the files by clicking **[HERE](https://github.com/justin05423/LUPE-2.0-App/archive/refs/heads/main.zip)**. It’s not linked, so you won’t get updates unless you download again.
+   A repository is just the project’s folder on GitHub. You need a copy of that folder on your computer.
+   - **Clone** uses Git to make a local copy that stays linked to GitHub, so you can get updates later with `git pull`.
+   - **OR** grab a one-time ZIP of the files by clicking **[HERE](https://github.com/justin05423/LUPE-2.0-App/archive/refs/heads/main.zip)**. It’s not linked, so you won’t get updates unless you download again.
 
    Open your terminal / command prompt and run:
    ```bash
@@ -71,32 +85,68 @@ To run “LUPE-2.0-App” on your own computer, follow these steps:
    cd LUPE-2.0-App
    ```
 
-2. **Download the LUPE 2.0 A-SOiD Model** (If not already present in 'model' folder when repository is downloaded/cloned.) 
-   Download from [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0) and move the contents of the folder into the `Model` folder, found in the now locally downloaded LUPE 2.0 App GitHub folder.  
-   > **Note**: For analyzing and retrieving pose estimation for LUPE video data, find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3).
+3. **Download the LUPE 2.0 A-SOiD Model** (If the model is **not already present** in the `Model/` folder) 
+   - Download from 👉 [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0)
+   - Move the contents into the `Model/` folder inside `LUPE-2.0-App` 
 
-3. **Create the Conda Environment**
+     > **Note**: For analyzing and retrieving pose estimation for LUPE video data, find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3).
 
-   For *macOS*:
-   ```bash
-   conda env create -f LUPE2_App.yaml
-   ```
+4. **Create the Conda Environment**
+   - Make sure [Anaconda](https://www.anaconda.com/products/distribution) is installed.
+   - Open your Anaconda terminal. Run the following code to make the LUPE2App Environment:
 
-   For *Windows*:
-   ```bash
-   conda env create -f LUPE2_App_Win.yaml
-   ```
+     For **macOS / Linux**:
+      ```bash
+      conda env create -f LUPE2_App.yaml
+      ```
+      
+     For **Windows**:
+      ```bash
+      conda env create -f LUPE2_App_Win.yaml
+      ```
 
-4. **Activate the LUPE2APP Environment**  
-   In your terminal/command prompt, ensure you are in the `LUPE-2.0-App` directory, then run:
-   ```bash
-   conda activate LUPE2APP
-   ```
+5. **Launch the LUPE App 🚀**
+   ### Overview
+   LUPE-2.0-App can be launched in **two ways**:
 
-5. **Run the App 😎**  
-   ```bash
-   streamlit run lupe_analysis.py
-   ```
+   i) **One-Click Launch (Recommended)** – double-click a file to start the app automatically  
+
+   ii) **Manual Launch (Advanced)** – run Streamlit from the command line
+      
+   | ⚡ One-Click App Launch (Recommended) | 🛠 Manual App Launch (Advanced / Debugging) |
+   |-------------------------------------|--------------------------------------------|
+   | **How to start**<br>Double-click a launcher file | **How to start**<br>Run Streamlit from the terminal |
+   | **Command needed**<br>None | **Command needed**<br>`streamlit run lupe_analysis.py` |
+   | **Best for**<br>Most users, quick startup, demos | **Best for**<br>Debugging, development, advanced use |
+   | **Environment handling**<br>Automatically activates `LUPE2APP` | **Environment handling**<br>User must activate `LUPE2APP` |
+   | **Browser behavior**<br>Opens automatically | **Browser behavior**<br>Opens automatically |
+   | **Where it runs**<br>Local machine (`localhost`) | **Where it runs**<br>Local machine (`localhost`) |
+   
+   ### ⚡ One-Click App Launch (Recommended)  
+      Once the environment is installed, LUPE can be launched by **double-clicking a file** — no terminal commands needed.
+      
+      | Operating System | Launcher File |
+      |------------------|---------------|
+      | macOS | `RunOS_LUPE.command` |
+      | Windows | `RunOS_LUPE.bat` |
+      | Linux | `RunOS_LUPE.sh` |
+      
+   ### 🛠 Manual App Launch (Advanced / Debugging)
+      If you prefer launching LUPE manually from the terminal...
+      1. Activate the LUPE2APP Environment.
+         In your Anaconda terminal/command prompt, ensure you are in the `LUPE-2.0-App` directory, then run:
+         ```bash
+         conda activate LUPE2APP
+         ```
+      2. Run the App 😎 Streamlit will print the local URL and open the app in your browser automatically.
+         ```bash
+         streamlit run lupe_analysis.py
+         ```
+   
+   ### 🧠 Troubleshooting Tips
+      - If the app does not open automatically, check the terminal output for the local URL
+      - If another Streamlit app is already running, Streamlit may use a different port
+      - Always ensure `LUPE2APP` is activated before launching
 
 ---
 
