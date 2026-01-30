@@ -192,8 +192,8 @@ For an overview on building the LUPE 2.0 System, check out the [Build](https://g
 - Collaboration between [Corder Lab](https://corderlab.com/) at University of Pennsylvania and [Yttri Lab](https://labs.bio.cmu.edu/yttri/) from Carnegie Mellon.
 
 #### Contributors  
-- Justin James [Corder Lab](https://corderlab.com/) actively develops and maintains this repository/cloud resource.
-- Other contributors include: Alexander Hsu [Yttri Lab](https://labs.bio.cmu.edu/yttri/).
+- Justin James [(Corder Lab)](https://corderlab.com/) actively develops and maintains this repository/cloud resource.
+- Other contributors include: Alexander Hsu [(Yttri Lab)](https://labs.bio.cmu.edu/yttri/).
 
 ---
 
