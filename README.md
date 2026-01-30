@@ -128,8 +128,8 @@ These models are pre-trained and integrated into the app.
       | Operating System | Launcher File |
       |------------------|---------------|
       | macOS | `RunOS_LUPE.command` |
-      | Windows | `RunOS_LUPE.bat` |
-      | Linux | `RunOS_LUPE.sh` |
+      | Windows | `RunWin_LUPE.bat` |
+      | Linux | `RunLinux_LUPE.sh` |
       
    ### 🛠 Manual App Launch (Advanced / Debugging)
       If you prefer launching LUPE manually from the terminal...
