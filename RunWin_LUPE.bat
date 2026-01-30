@@ -15,20 +15,88 @@ echo.
 REM Change to the script's directory
 cd /d "%~dp0"
 
-REM Check if conda is available
+REM Try to find conda in common locations
+set CONDA_PATH=
+
+REM Check if conda is in PATH first
 where conda >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: Conda not found in PATH!
-    echo.
-    echo Please ensure Anaconda or Miniconda is installed and added to PATH.
-    echo Download from: https://docs.conda.io/en/latest/miniconda.html
-    echo.
-    echo During installation, check "Add to PATH" option.
-    echo.
-    pause
-    exit /b 1
+if not errorlevel 1 (
+    echo Found conda in PATH
+    goto :activate
 )
 
+REM Check common Anaconda/Miniconda locations
+if exist "%USERPROFILE%\anaconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%USERPROFILE%\anaconda3
+    goto :found_conda
+)
+if exist "%USERPROFILE%\miniconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%USERPROFILE%\miniconda3
+    goto :found_conda
+)
+if exist "%USERPROFILE%\Anaconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%USERPROFILE%\Anaconda3
+    goto :found_conda
+)
+if exist "%USERPROFILE%\Miniconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%USERPROFILE%\Miniconda3
+    goto :found_conda
+)
+if exist "%LOCALAPPDATA%\anaconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%LOCALAPPDATA%\anaconda3
+    goto :found_conda
+)
+if exist "%LOCALAPPDATA%\miniconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%LOCALAPPDATA%\miniconda3
+    goto :found_conda
+)
+if exist "%LOCALAPPDATA%\Continuum\anaconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%LOCALAPPDATA%\Continuum\anaconda3
+    goto :found_conda
+)
+if exist "%LOCALAPPDATA%\Continuum\miniconda3\Scripts\activate.bat" (
+    set CONDA_PATH=%LOCALAPPDATA%\Continuum\miniconda3
+    goto :found_conda
+)
+if exist "C:\anaconda3\Scripts\activate.bat" (
+    set CONDA_PATH=C:\anaconda3
+    goto :found_conda
+)
+if exist "C:\miniconda3\Scripts\activate.bat" (
+    set CONDA_PATH=C:\miniconda3
+    goto :found_conda
+)
+if exist "C:\ProgramData\anaconda3\Scripts\activate.bat" (
+    set CONDA_PATH=C:\ProgramData\anaconda3
+    goto :found_conda
+)
+if exist "C:\ProgramData\miniconda3\Scripts\activate.bat" (
+    set CONDA_PATH=C:\ProgramData\miniconda3
+    goto :found_conda
+)
+
+REM Conda not found anywhere
+echo ERROR: Could not find Anaconda or Miniconda installation!
+echo.
+echo Please install Anaconda or Miniconda from:
+echo   https://docs.conda.io/en/latest/miniconda.html
+echo.
+echo Or if already installed, the script could not find it.
+echo Common install locations checked:
+echo   - %USERPROFILE%\anaconda3
+echo   - %USERPROFILE%\miniconda3
+echo   - %LOCALAPPDATA%\anaconda3
+echo   - C:\anaconda3
+echo.
+pause
+exit /b 1
+
+:found_conda
+echo Found conda at: %CONDA_PATH%
+call "%CONDA_PATH%\Scripts\activate.bat" "%CONDA_PATH%"
+
+:activate
+echo.
 echo Activating LUPE2APP environment...
 call conda activate LUPE2APP
 
