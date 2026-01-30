@@ -1082,9 +1082,11 @@ def main():
         behav_viddir = HERE / 'behavior_videos'
         gif_path = behav_viddir / f"{selected_behavior}.gif"
 
-        # Display GIF if it exists
+        # Display GIF if it exists - read as bytes for Windows compatibility
         if gif_path.exists():
-            mid_col.image(str(gif_path))  # Convert Path object to string for Streamlit
+            with open(gif_path, 'rb') as f:
+                gif_bytes = f.read()
+            mid_col.image(gif_bytes)
     except:
         pass  # Silently ignore errors
 
