@@ -1,5 +1,3 @@
-# utils/analysis_scripts/behavior_bout_durations.py
-
 import os
 import warnings
 import numpy as np
@@ -9,7 +7,6 @@ import seaborn as sns
 
 from utils.classification import load_behaviors
 from utils.meta import behavior_names, behavior_colors  # Assumes these are defined in meta.py
-
 
 def behavior_bout_durations(project_name, selected_groups, selected_conditions, framerate=60):
     """
@@ -25,17 +22,14 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
     Returns:
         fig (matplotlib.figure.Figure): The generated figure containing the boxplots.
     """
-    # Use the same base directory as your app
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+    # Use the same base directory as your app with cross-platform path handling
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     behaviors_file = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
     behaviors = load_behaviors(behaviors_file)
 
-    # Define the directory to save CSVs and figures
     directory_path = os.path.join(base_dir, "figures", "behavior_instance-durations")
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
+    os.makedirs(directory_path, exist_ok=True)
 
-    # Helper function to compute bout durations (in seconds)
     def get_duration_bouts(predict, behavior_classes, framerate=60):
         # Find indices where the behavior label changes
         bout_start_idx = np.where(np.diff(np.hstack([-1, predict])) != 0)[0]
@@ -93,7 +87,7 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                     raise ValueError(f"Error processing durations for {selected_group} - {selected_condition}: {e}")
 
                 durations_df = pd.DataFrame(durations_dict)
-                # Save the per–group/condition CSV file
+                # Save the per–group/condition CSV file (shortened filename)
                 csv_filename = os.path.join(
                     directory_path,
                     f"behavior_durations_{selected_group}_{selected_condition}.csv"
@@ -120,11 +114,11 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                 ax[row, col].set_title(f'{selected_group} - {selected_condition}')
 
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    # Save as SVG file
-    svg_path = os.path.join(directory_path, f"behavior_durations_{project_name}.svg")
+    # Save as SVG file (shortened filename)
+    svg_path = os.path.join(directory_path, "behavior_durations.svg")
     fig.savefig(svg_path, dpi=600, bbox_inches='tight')
 
-    # --- Additional Analysis: Average, Total, and Std Durations Per File ---
+    # Additional Analysis: Average, Total, and Std Durations Per File
     all_file_durations = []
     for row in range(len(selected_groups)):
         for col in range(len(selected_conditions)):
@@ -151,7 +145,7 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                     all_file_durations.append(record)
 
     all_file_durations_df = pd.DataFrame(all_file_durations)
-    output_csv_path = os.path.join(directory_path, f"total_average_std_durations_per_file_{project_name}.csv")
+    output_csv_path = os.path.join(directory_path, "total_average_std_durations_per_file.csv")
     all_file_durations_df.to_csv(output_csv_path, index=False)
 
     return fig

@@ -6,12 +6,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Ensure the parent directory is in sys.path for importing utilities
-if os.path.join(os.path.abspath(''), '../') not in sys.path:
-    sys.path.append(os.path.join(os.path.abspath(''), '../'))
+if os.path.join(os.path.abspath(''), '..') not in sys.path:
+    sys.path.append(os.path.join(os.path.abspath(''), '..'))
 
 from utils.classification import load_behaviors
-from utils.meta import *  # This is assumed to define variables such as behavior_names
+from utils.meta import *
 
 
 def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heatmap_max_value=None):
@@ -34,16 +33,15 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
                               of the corresponding generated heatmap (SVG file).
     """
 
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     behaviors_file = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
 
-    # Load behaviors if needed elsewhere in the analysis (for example, to verify behavior names)
     behaviors = load_behaviors(behaviors_file)
     if behaviors is None or not behaviors:
         raise ValueError("Failed to load behaviors or the dataset is empty.")
 
     frames_dir = os.path.join(base_dir, "figures", "behaviors_csv_raw-classification", "frames")
-    csv_files = glob.glob(os.path.join(frames_dir, '**', '*.csv'), recursive=True)
+    csv_files = glob.glob(os.path.join(frames_dir, "**", "*.csv"), recursive=True)
     print("Found CSV files:", len(csv_files))
     for f in csv_files:
         print(os.path.basename(f))
@@ -56,9 +54,7 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
             mouse_id = os.path.splitext(os.path.basename(file))[0]
             df['mouse_id'] = mouse_id
             df['behavior'] = df['behavior'].astype(int)
-            # Map numeric behaviors to their labels using the behavior_names variable
             df['behavior_label'] = df['behavior'].apply(lambda x: behavior_names[x])
-            # Convert frame numbers to seconds; assumed frame rate = 60 frames per minute.
             df['time_s'] = df['frame'] / 60.0
 
             if not df.empty:
@@ -122,7 +118,7 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
 
         svg_filename = os.path.join(analysis_dir, f"{behavior_name.replace(' ', '_')}_heatmap.svg")
         plt.savefig(svg_filename, format='svg', bbox_inches='tight')
-        plt.close()  # Close the figure to free up memory
+        plt.close()
 
         print(f"Saved heatmap for '{behavior_name}' as {svg_filename}")
         heatmap_files[behavior_name] = svg_filename

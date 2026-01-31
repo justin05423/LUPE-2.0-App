@@ -1,5 +1,3 @@
-# utils/analysis_scripts/behavior_bout_counts.py
-
 import os
 import warnings
 import numpy as np
@@ -9,7 +7,6 @@ import seaborn as sns
 
 from utils.classification import load_behaviors
 from utils.meta import behavior_names, behavior_colors  # Assumes meta.py defines these
-
 
 def behavior_bout_counts(project_name, selected_groups, selected_conditions):
     """
@@ -29,15 +26,13 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
     Returns:
         fig (matplotlib.figure.Figure): The generated figure containing the bar charts.
     """
-    # Use the app's base directory
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     behaviors_file = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
     behaviors = load_behaviors(behaviors_file)
 
-    # Directory for main analysis CSVs and figure.
     directory_path = os.path.join(base_dir, "figures", "behavior_instance-counts")
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
+    os.makedirs(directory_path, exist_ok=True)
 
     # Helper function: compute number of bouts for each behavior from a prediction vector.
     def get_num_bouts(predict, behavior_classes):
@@ -58,7 +53,6 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
     cols = len(selected_conditions)
     fig, ax = plt.subplots(rows, cols, figsize=(11, 20), sharex=False, sharey=True)
 
-    # Ensure ax is a 2D array
     if rows == 1 and cols == 1:
         ax = np.array([[ax]])
     elif rows == 1:
@@ -75,12 +69,10 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
             if selected_group in behaviors and selected_condition in behaviors[selected_group]:
                 file_keys = list(behaviors[selected_group][selected_condition].keys())
 
-                # Compute bout counts for each file in this group-condition combination.
                 for file_name in file_keys:
                     counts = get_num_bouts(behaviors[selected_group][selected_condition][file_name], behavior_names)
                     bout_counts.append(counts)
 
-                # Compute mean and standard deviation across files (ignoring NaNs)
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     bout_mean = np.nanmean(bout_counts, axis=0)
@@ -94,14 +86,12 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
                 }
                 behavior_instance_df = pd.DataFrame(behavior_instance_dict)
 
-                # Save the CSV file for this group-condition.
                 csv_filename = os.path.join(
                     directory_path,
-                    f"behavior_instance_counts_{project_name}_{selected_group}-{selected_condition}.csv"
+                    f"behavior_instance_counts_{selected_group}-{selected_condition}.csv"
                 )
                 behavior_instance_df.to_csv(csv_filename, index=False)
 
-                # Create a horizontal bar chart with error bars.
                 behavior_instance_df.plot.barh(
                     y='mean_counts',
                     x='labels',
@@ -127,14 +117,12 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
                 ax[row, col].set_title(f'{selected_group} - {selected_condition}')
 
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    # Save as SVG
-    save_path_svg = os.path.join(directory_path, f"behavior_counts_{project_name}.svg")
+    save_path_svg = os.path.join(directory_path, "behavior_counts.svg")
     fig.savefig(save_path_svg, dpi=600, bbox_inches='tight')
 
     ### Part 2: Additional Analysis – Raw Frequency CSVs ###
     raw_directory_path = os.path.join(directory_path, "behavior_instance-counts_raw")
-    if not os.path.exists(raw_directory_path):
-        os.makedirs(raw_directory_path)
+    os.makedirs(raw_directory_path, exist_ok=True)
 
     all_data = []
     for selected_group in selected_groups:
@@ -158,18 +146,17 @@ def behavior_bout_counts(project_name, selected_groups, selected_conditions):
                 raw_bout_counts_df = pd.DataFrame(bout_counts, columns=behavior_names, index=file_keys)
                 raw_csv_filename = os.path.join(
                     raw_directory_path,
-                    f"behavior_instance_counts_raw_{project_name}_{selected_group}-{selected_condition}.csv"
+                    f"behavior_instance_counts_raw_{selected_group}-{selected_condition}.csv"
                 )
                 raw_bout_counts_df.to_csv(raw_csv_filename)
 
-                # (Optional) Compute mean and std for quick check
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     _ = np.nanmean(bout_counts, axis=0)
                     _ = np.nanstd(bout_counts, axis=0)
 
     all_data_df = pd.DataFrame(all_data)
-    all_data_csv = os.path.join(raw_directory_path, f"behavior_instance_counts_raw_all_{project_name}.csv")
+    all_data_csv = os.path.join(raw_directory_path, "behavior_instance_counts_raw_all.csv")
     all_data_df.to_csv(all_data_csv, index=False)
 
     return fig

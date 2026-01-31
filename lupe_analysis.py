@@ -30,21 +30,16 @@ from utils.analysis_scripts.behavior_LUPE_AMPS import behavior_LUPE_AMPS
 
 def run_notebook(notebook_path, output_path):
     try:
-        # Load the notebook
         with open(notebook_path, "r") as f:
             notebook = nbformat.read(f, as_version=4)
 
-        # Create an execution preprocessor
         ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
 
-        # Execute the notebook
         ep.preprocess(notebook, {"metadata": {"path": "./"}})
 
-        # Save the executed notebook
         with open(output_path, "w") as f:
             nbformat.write(notebook, f)
 
-        # Extract cell outputs
         outputs = []
         for cell in notebook["cells"]:
             if cell["cell_type"] == "code" and "outputs" in cell:
@@ -56,7 +51,7 @@ def run_notebook(notebook_path, output_path):
         st.error(f"Failed to execute notebook: {e}")
         return None
 
-# Analysis Options Dictionary
+# Analysis Options
 ANALYSIS_DETAILS = {
     "Behavior Binned Ratio": {
         "module": "behavior_binned_ratio",
@@ -91,25 +86,20 @@ def parse_project_info_file(meta_path: str):
                 line = raw.strip()
                 if not line:
                     continue
-                # Section headers
                 if line.startswith('Groups:'):
                     section = 'groups'
                     continue
                 if line.startswith('Conditions:'):
                     section = 'conditions'
                     continue
-                # Switch out of conditions/groups when file listing starts
                 if line.startswith('Files by Group and Condition'):
                     section = 'files'
                     continue
-                # Within the files listing, bracketed group headers and condition subheaders should be ignored
                 if line.startswith('[') and line.endswith(']'):
                     section = 'files'
                     continue
                 if line.endswith(':') and section == 'files':
-                    # e.g., "Condition A:" inside the files section
                     continue
-                # Capture only list items that belong to the current logical section
                 if line.startswith('- '):
                     item = line[2:].strip()
                     if section == 'groups':
@@ -117,17 +107,14 @@ def parse_project_info_file(meta_path: str):
                     elif section == 'conditions':
                         conditions.append(item)
     except Exception:
-        # If parsing fails, return what we collected (possibly empty)
         pass
     return groups, conditions
-
 
 # Constants
 HERE = Path(__file__).parent.resolve()
 icon_fname = HERE.joinpath("images/logo_mouse.png")
 icon_img = Image.open(icon_fname)
 
-# Set Streamlit configurations
 st.set_page_config(
     page_title="LUPE",
     page_icon=icon_img,
@@ -142,7 +129,6 @@ hide_streamlit_style = """
 </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
@@ -214,7 +200,6 @@ with st.sidebar:
             st.session_state["num_groups"] = st.session_state.pop("pending_num_groups")
         if "pending_num_conditions" in st.session_state:
             st.session_state["num_conditions"] = st.session_state.pop("pending_num_conditions")
-        # Clear the flag so this runs only once per load
         st.session_state["apply_meta_on_sidebar"] = False
 
     # Configure Groups
@@ -279,7 +264,6 @@ with st.sidebar:
     for group_key, group_name in st.session_state["group_names"].items():
         st.markdown(f"#### {group_name}")
         for condition_name in st.session_state["condition_names"]:
-            # Use the user-defined group name as the key in the file uploader's session state.
             uploaded = st.file_uploader(
                 f"Upload Files for {group_name} - {condition_name}:",
                 accept_multiple_files=True,
@@ -288,12 +272,10 @@ with st.sidebar:
             )
 
             if uploaded:
-                # Use the actual group name (user-defined) as the key
                 if group_name not in st.session_state["uploaded_files"]:
                     st.session_state["uploaded_files"][group_name] = {}
                 st.session_state["uploaded_files"][group_name][condition_name] = uploaded
 
-            # If there are uploaded files for this group and condition, show them.
             if (group_name in st.session_state["uploaded_files"] and
                     condition_name in st.session_state["uploaded_files"][group_name]):
                 st.markdown("Uploaded Files:")
@@ -340,11 +322,9 @@ def preprocess_workflow():
         st.warning("Please enter a project name to proceed.")
         return
 
-    # Save project name to session state for analyses
     if not st.session_state.get("current_project") or st.session_state["current_project"] != project_name:
         st.session_state["current_project"] = project_name  # Save the project name
 
-    # Paths to expected files
     base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
     raw_data_file = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
     features_file = os.path.join(base_dir, f"binned_features_{project_name}.pkl")
@@ -356,7 +336,6 @@ def preprocess_workflow():
         meta_path = os.path.join(base_dir, f"project_info_{project_name}.txt")
         if os.path.exists(meta_path):
             g_list, c_list = parse_project_info_file(meta_path)
-            # Only update if we actually found something
             updated = False
             if g_list:
                 st.session_state["group_names"] = {f"group_{i+1}": g for i, g in enumerate(g_list)}
@@ -368,14 +347,10 @@ def preprocess_workflow():
                 updated = True
             if updated:
                 st.session_state["meta_loaded_for_project"] = project_name
-                # Signal the sidebar to apply these values BEFORE widgets are created
                 st.session_state["apply_meta_on_sidebar"] = True
-                # Rerun so the sidebar reflects the loaded values
                 st.experimental_rerun()
 
     # (Project directory and metadata file for new projects are now handled after Step 1 completes.)
-
-    # Determine workflow progress
     raw_data_exists = os.path.exists(raw_data_file)
     features_exist = os.path.exists(features_file)
     behaviors_exist = os.path.exists(behaviors_file)
@@ -390,7 +365,6 @@ def preprocess_workflow():
         st.markdown("### Step 1: Preprocess Data")
         uploaded_files = st.session_state.get("uploaded_files", {})
 
-        # Debug: Print the uploaded_files dictionary
         st.write("📋 Checkpoint!: Confirm Your Uploaded Files Dictionary")
         st.write(uploaded_files)
 
@@ -406,7 +380,6 @@ def preprocess_workflow():
                     st.session_state["condition_names"],
                     uploaded_files
                 )
-                # After Step 1 completes, create/update the project metadata file
                 os.makedirs(base_dir, exist_ok=True)
                 meta_path = os.path.join(base_dir, f"project_info_{project_name}.txt")
                 try:
@@ -414,15 +387,12 @@ def preprocess_workflow():
                     with open(meta_path, "w", encoding="utf-8") as f:
                         f.write(f"Project: {project_name}\n")
                         f.write(f"Created/Updated: {datetime.now().isoformat()}\n\n")
-                        # Groups
                         f.write("Groups:\n")
                         for g in list(st.session_state.get("group_names", {}).values()):
                             f.write(f"- {g}\n")
-                        # Conditions
                         f.write("\nConditions:\n")
                         for c in st.session_state.get("condition_names", []):
                             f.write(f"- {c}\n")
-                        # Files per Group/Condition
                         f.write("\nFiles by Group and Condition:\n")
                         up = uploaded_files if isinstance(uploaded_files, dict) else {}
                         for gname, cond_map in up.items():
@@ -450,8 +420,7 @@ def preprocess_workflow():
             try:
                 features_file_path = preprocess_get_features(project_name)
                 st.success(f"Step 2 completed! Features saved at {features_file_path}")
-                # Comment out automatic rerun so you can see debug info:
-                # st.experimental_rerun()
+
                 if st.button("Continue to Step 3"):
                     st.experimental_rerun()
             except Exception as e:
@@ -462,7 +431,6 @@ def preprocess_workflow():
         st.markdown("### Step 3: Predict Behaviors")
         if st.button("Run Preprocessing Step 3"):
             try:
-                # Only pass project_name, since groups and conditions are handled inside preprocess_get_behaviors
                 behaviors_file_path = preprocess_get_behaviors(project_name)
                 st.success(f"Step 3 completed! Behaviors saved at {behaviors_file_path}")
                 st.experimental_rerun()
@@ -751,7 +719,7 @@ The ultimate goal of LUPE-AMPS is to translate these behavioral signatures into 
     st.markdown("### Requirements")
     st.markdown(
         """\
-The model is specifically trained to analyze localized hindpaw injuries. It leverages behavioral data collected from formalin, capsaicin, and spared nerve injuries to the hindpaw. For more details on the LUPE-AMPS module, please refer to the [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2).
+The model is specifically trained to analyze localized hindpaw injuries. It leverages behavioral data collected from formalin, capsaicin, and spared nerve injuries to the hindpaw. For more details on the LUPE-AMPS module, please refer to our recent [Nature publication](https://www.nature.com/articles/s41586-025-09908-w).
 """
     )
 
@@ -770,13 +738,13 @@ The model is specifically trained to analyze localized hindpaw injuries. It leve
     st.markdown("### Select Model Option")
     st.markdown(
         "For novel analysis, you can choose to either use the original LUPE-AMPS model (see "
-        "[pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2)) "
+        "[Nature publication](https://www.nature.com/articles/s41586-025-09908-w)) "
         "or create a new LUPE-AMPS model on novel data."
     )
     model_option = st.radio(
         "Choose Model Option",
         options=[
-            "Use original LUPE-AMPS model for novel analysis (see [pre-print publication](https://www.biorxiv.org/content/10.1101/2024.04.26.591113v2))",
+            "Use original LUPE-AMPS model for novel analysis (see [recent publication](https://www.nature.com/articles/s41586-025-09908-w))",
             "Create new LUPE-AMPS model on novel data",
         ],
         index=0,

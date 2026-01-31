@@ -1,5 +1,3 @@
-# utils/analysis_scripts/behavior_location.py
-
 import os
 import warnings
 import numpy as np
@@ -28,21 +26,17 @@ def behavior_location(project_name, selected_groups, selected_conditions):
     Returns:
         figs (list): A list of matplotlib Figure objects (one per behavior).
     """
-    # Update file paths to use the app's base directory
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+    # Update file paths to use the app's base directory with cross-platform path handling
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     behaviors_file = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
     poses_file = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
 
-    # Load behaviors and poses
     behaviors = load_behaviors(behaviors_file)
     poses = load_data(poses_file)
 
-    # Define the directory to save figures
     directory_path = os.path.join(base_dir, "figures", "behavior_location")
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
+    os.makedirs(directory_path, exist_ok=True)
 
-    # Parameters for plotting
     bodypart_idx = 38  # tail-base as position indicator
     center = (768 / 2, 770 / 2)
     radius = 768 / 2 + 20
@@ -53,17 +47,14 @@ def behavior_location(project_name, selected_groups, selected_conditions):
 
     figs = []  # list to hold the figures per behavior
 
-    # Loop over each behavior
     for b, behav_name in enumerate(behavior_names):
         count = 0
-        # Create a figure with a black background
-        fig = plt.figure(facecolor='#000000', figsize=(10, rows * 2.5))
+
+        fig = plt.figure(facecolor='#000000', figsize=(10, rows * 2.5 + 1))
         fig.suptitle(behav_name, color=behavior_colors[b], fontsize=16, fontweight='bold', y=0.98)
 
-        # Loop over each group and condition combination
         for row in range(rows):
             for col in range(cols):
-                # Create subplot for the current group-condition combination
                 ax = fig.add_subplot(rows, cols, count + 1)
                 ax.set_facecolor(None)
                 selected_group = selected_groups[row]
@@ -77,7 +68,6 @@ def behavior_location(project_name, selected_groups, selected_conditions):
                 # Create a colormap from black to the behavior color
                 colors = ['#000000', behavior_colors[b]]
                 cm = LinearSegmentedColormap.from_list("Custom", colors, N=20)
-                # (Optional) Preallocate a dummy array (not used further)
                 heatmaps = np.empty((38, 38))
 
                 if selected_group in behaviors and selected_condition in behaviors[selected_group]:
@@ -103,7 +93,6 @@ def behavior_location(project_name, selected_groups, selected_conditions):
                         ax.imshow(np.nanmean(hist2d_all, axis=0).T,
                                   extent=extent, origin='lower', cmap=cm)
 
-                # Add the circle patch to the axis
                 ax.add_patch(circle)
                 ax.set_aspect('equal')
                 ax.invert_yaxis()  # invert y-axis for proper orientation
@@ -112,11 +101,12 @@ def behavior_location(project_name, selected_groups, selected_conditions):
                 ax.set_title(f'{selected_group} - {selected_condition}', color='white', fontsize=10)
                 count += 1
 
-        # Save as SVG
-        save_path_svg = os.path.join(directory_path, f"behavior_location_{behav_name}_{project_name}.svg")
+        plt.tight_layout(rect=[0, 0, 1, 0.92])
+        plt.subplots_adjust(top=0.88, hspace=0.3)
+
+        save_path_svg = os.path.join(directory_path, f"behavior_location_{behav_name}.svg")
         fig.savefig(save_path_svg, dpi=600, bbox_inches='tight')
 
-        # Append the figure to the list
         figs.append(fig)
 
     return figs

@@ -1,5 +1,3 @@
-# utils/analysis_scripts/behavior_kinematx.py
-
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -11,13 +9,12 @@ import warnings
 from sklearn.preprocessing import LabelEncoder
 
 # Ensure the project root is in sys.path if needed
-if not os.path.join(os.path.abspath(''), '../') in sys.path:
-    sys.path.append(os.path.join(os.path.abspath(''), '../'))
+if not os.path.join(os.path.abspath(''), '..') in sys.path:
+    sys.path.append(os.path.join(os.path.abspath(''), '..'))
 
 from utils.classification import load_model, load_features, load_data, weighted_smoothing, load_behaviors
 from utils.feature_utils import get_avg_kinematics
-from utils.meta import keypoints, behavior_names  # 'keypoints' should be a list of bodypart names
-
+from utils.meta import keypoints, behavior_names
 
 def behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects):
     """
@@ -29,9 +26,8 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
         selected_group (str): The group name to analyze (only one).
         selected_conditions (list): A list of condition names to analyze.
         bp_selects (str): The bodypart of interest (e.g., 'l_hindpaw').
-
     """
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     model_path = os.path.join("model", "model.pkl")
     data_path = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
     features_path = os.path.join(base_dir, f"binned_features_{project_name}.pkl")
@@ -45,15 +41,11 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
     figure_dir = os.path.join(base_dir, "figures", "behavior_kinematx")
     bp_dir = os.path.join(figure_dir, bp_selects)
 
-    if not os.path.exists(figure_dir):
-        os.makedirs(figure_dir)
-
-    if not os.path.exists(bp_dir):
-        os.makedirs(bp_dir)
+    os.makedirs(figure_dir, exist_ok=True)
+    os.makedirs(bp_dir, exist_ok=True)
 
     perfile_dir = os.path.join(bp_dir, "per_file_avg_displacement")
-    if not os.path.exists(perfile_dir):
-        os.makedirs(perfile_dir)
+    os.makedirs(perfile_dir, exist_ok=True)
 
     movement_by_condition = {}
     bin_centers_by_condition = {}
@@ -92,7 +84,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
             df_perfile_avg = pd.DataFrame(perfile_avg_rows)
             perfile_avg_path = os.path.join(
                 perfile_dir,
-                f"{selected_group}_{selected_condition}_{file_key}_avg_displacement.csv"
+                f"{file_key}_avg_displacement.csv"
             )
             df_perfile_avg.to_csv(perfile_avg_path, index=False)
             print(f"Saved per-file average displacement: {perfile_avg_path}")
@@ -127,7 +119,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
         df_desc = pd.DataFrame(desc_rows)
         desc_csv_path = os.path.join(
             bp_dir,
-            f"behavior_kinematx_descriptive_stats_{selected_group}_{selected_condition}_{bp_selects}.csv"
+            f"descriptive_stats_{selected_condition}.csv"
         )
         df_desc.to_csv(desc_csv_path, index=False)
         print(f"Saved descriptive stats CSV: {desc_csv_path}")
@@ -184,14 +176,14 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
         df_condition = pd.DataFrame(csv_rows)
         condition_csv_path = os.path.join(
             bp_dir,
-            f"plot_avg_displacement_{selected_group}_{condition}_{bp_selects}.csv"
+            f"plot_avg_displacement_{condition}.csv"
         )
         df_condition.to_csv(condition_csv_path, index=False)
         print(f"Saved pooled displacement CSV for '{condition}': {condition_csv_path}")
 
     n_conditions = len(selected_conditions)
     n_behaviors = len(behavior_names)
-    n_bins = movement_n_bins  # == 10
+    n_bins = movement_n_bins
 
     fig, axes = plt.subplots(
         nrows=n_conditions,
@@ -215,7 +207,6 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
         ax.set_yticklabels(behavior_names)
         ax.set_xlabel("Displacement Bin Center (pixels/frame)")
 
-        # Use that condition’s bin centers for x‐tick labels
         centers = bin_centers_by_condition[condition]
         ax.set_xticks(np.arange(n_bins))
         ax.set_xticklabels([f"{c:.2f}" for c in centers], rotation=45, ha='right')
@@ -227,10 +218,9 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
 
     fig_path = os.path.join(
         bp_dir,
-        f"avg_displacement_conditions_{selected_group}_{bp_selects}.svg"
+        f"avg_displacement_heatmap.svg"
     )
     plt.savefig(fig_path, format='svg', dpi=600, bbox_inches='tight')
     print(f"Saved combined heatmap figure: {fig_path}")
 
-    # 9) Return that one Figure so that st.pyplot(fig) works
     return fig

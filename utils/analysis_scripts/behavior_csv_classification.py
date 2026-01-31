@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from utils.classification import load_behaviors
 
-
 def behavior_csv_classification(project_name, selected_groups=None, selected_conditions=None):
     """
     Generate CSV files for behavior classifications (per frame and per second).
@@ -12,44 +11,38 @@ def behavior_csv_classification(project_name, selected_groups=None, selected_con
         selected_groups (list, optional): List of groups to process. Process all if None.
         selected_conditions (list, optional): List of conditions to process. Process all if None.
     """
-    # Define the base directory
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
+
+    # Define the base directory using os.path.join for cross-platform compatibility
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     behaviors_file = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
 
     # Load behaviors
     behaviors = load_behaviors(behaviors_file)
     behavior_labels = ['still', 'walking', 'rearing', 'grooming', 'licking hindpaw L', 'licking hindpaw R']
 
-    # ------------------------------------------------------
     # Create CSVs for Per-Frame Behavior Classification
-    # ------------------------------------------------------
-    base_output_dir_frames = os.path.join(base_dir, "figures/behaviors_csv_raw-classification/frames")
+    base_output_dir_frames = os.path.join(base_dir, "figures", "behaviors_csv_raw-classification", "frames")
     for group, conditions in behaviors.items():
         if selected_groups is not None and group not in selected_groups:
             continue
         for condition, files in conditions.items():
             if selected_conditions is not None and condition not in selected_conditions:
                 continue
-            # Create a subdirectory for the group and condition
             output_dir_frames = os.path.join(base_output_dir_frames, group, condition)
             os.makedirs(output_dir_frames, exist_ok=True)
             for file_key, data in files.items():
-                # Create a DataFrame: each row corresponds to a frame
                 df = pd.DataFrame({
                     'frame': range(1, len(data) + 1),
                     'behavior': data,
                     'behavior_label': [behavior_labels[i] for i in data]
                 })
-                csv_filename = f'{group}_{condition}_{file_key}.csv'
-                # Save DataFrame to CSV in the subfolder
+                csv_filename = f'{file_key}.csv'
                 df.to_csv(os.path.join(output_dir_frames, csv_filename), index=False)
                 print(f'Saved {csv_filename} in {output_dir_frames}')
 
-    # ------------------------------------------------------
     # Create CSVs for Per-Second Behavior Classification
-    # ------------------------------------------------------
-    base_output_dir_seconds = os.path.join(base_dir, "figures/behaviors_csv_raw-classification/seconds")
-    frame_rate = 60  # Assuming 60 frames per second
+    base_output_dir_seconds = os.path.join(base_dir, "figures", "behaviors_csv_raw-classification", "seconds")
+    frame_rate = 60
     for group, conditions in behaviors.items():
         if selected_groups is not None and group not in selected_groups:
             continue
@@ -65,7 +58,7 @@ def behavior_csv_classification(project_name, selected_groups=None, selected_con
                     'behavior': data,
                     'behavior_label': [behavior_labels[i] for i in data]
                 })
-                csv_filename = f'{group}_{condition}_{file_key}.csv'
+                csv_filename = f'{file_key}.csv'
                 df.to_csv(os.path.join(output_dir_seconds, csv_filename), index=False)
                 print(f'Saved {csv_filename} in {output_dir_seconds}')
 

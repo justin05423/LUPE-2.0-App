@@ -1,10 +1,38 @@
-# utils/analysis_scripts/behavior_binned_ratio.py
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+import platform
+from pathlib import Path
+
 from utils.classification import load_behaviors
+
+def _safe_component(s: str) -> str:
+    if s is None:
+        return "None"
+    s = str(s)
+
+    bad = '<>:"/\\|?*'
+    for ch in bad:
+        s = s.replace(ch, "_")
+
+    s = s.rstrip(" .")
+
+    return s if s else "unnamed"
+
+def _win_long_path(p: Path) -> str:
+    s = str(p.resolve())
+
+    if platform.system().lower().startswith("win"):
+        if s.startswith("\\\\?\\"):
+            return s
+
+        if s.startswith("\\\\"):
+            return "\\\\?\\UNC\\" + s.lstrip("\\")
+        else:
+            return "\\\\?\\" + s
+    else:
+        return s
 
 def behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min):
     """
@@ -19,20 +47,28 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
     Returns:
         figs (list): A list of matplotlib Figure objects (one for each group).
     """
+    # Anchor base_dir to repo root so launching via .bat vs terminal doesn't change paths
+    repo_root = Path(__file__).resolve().parents[2]
+
     # Define the base directory
-    base_dir = f"./LUPEAPP_processed_dataset/{project_name}/"
-    behaviors_file = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
+    base_dir = repo_root / "LUPEAPP_processed_dataset" / str(project_name)
+    behaviors_file = base_dir / f"behaviors_{project_name}.pkl"
 
     # Load behaviors
-    behaviors = load_behaviors(behaviors_file)
+    if not behaviors_file.exists():
+        raise FileNotFoundError(
+            f"Behaviors file not found: {behaviors_file}\n"
+            "Make sure preprocessing has generated behaviors_<project>.pkl"
+        )
+
+    behaviors = load_behaviors(str(behaviors_file))
 
     # Parameters
-    time_bin_size = 60 * 60 * num_min
+    time_bin_size = 60 * 60 * int(num_min)
 
     # Define the directory path for saving figures and CSVs
-    directory_path = os.path.join(base_dir, "figures/behavior_binned-ratio-timeline")
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
+    directory_path = base_dir / "figures" / "behavior_binned-ratio-timeline"
+    directory_path.mkdir(parents=True, exist_ok=True)
 
     # Check if behaviors is None or empty
     if behaviors is None or not behaviors:
@@ -55,7 +91,15 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
 
             if selected_group in behaviors and selected_condition in behaviors[selected_group]:
                 file_keys = list(behaviors[selected_group][selected_condition].keys())
+                if len(file_keys) == 0:
+                    raise ValueError(f"No files found for group '{selected_group}' condition '{selected_condition}'.")
+
                 n_bins = len(behaviors[selected_group][selected_condition][file_keys[0]]) // time_bin_size
+                if int(n_bins) <= 0:
+                    raise ValueError(
+                        f"Not enough data to bin for {selected_group}/{selected_condition}. "
+                        f"time_bin_size={time_bin_size}, series_len={len(behaviors[selected_group][selected_condition][file_keys[0]])}"
+                    )
 
                 behavior_ratios_files = {key: np.nan for key in file_keys}
 
@@ -63,9 +107,17 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
                     binned_behaviors = []
                     for bin_n in range(int(n_bins)):
                         behavior_ratios = {key: 0 for key in range(len(behavior_names))}
-                        values, counts = np.unique(behaviors[selected_group][selected_condition][file_name][time_bin_size * bin_n:time_bin_size * (bin_n + 1)], return_counts=True)
+                        chunk = behaviors[selected_group][selected_condition][file_name][time_bin_size * bin_n:time_bin_size * (bin_n + 1)]
+                        values, counts = np.unique(chunk, return_counts=True)
+                        denom = sum(counts) if sum(counts) > 0 else 1
                         for i, value in enumerate(values):
-                            behavior_ratios[value] = counts[i] / sum(counts)
+                            # Guard for unexpected values
+                            try:
+                                v = int(value)
+                            except Exception:
+                                continue
+                            if 0 <= v < len(behavior_names):
+                                behavior_ratios[v] = counts[i] / denom
                         binned_behaviors.append(behavior_ratios)
                     behavior_ratios_files[file_name] = binned_behaviors
 
@@ -89,19 +141,31 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
                 ax.set_xlabel(f'Time bin = {num_min} min')
                 ax.set_ylabel('Percent')
                 ax.spines[['top', 'right']].set_visible(False)
+
                 df = pd.DataFrame(data_to_save)
 
-                # Save DataFrame to CSV (one file per group-condition combination)
-                output_filename = os.path.join(directory_path, f"behavior_binned-ratio-timeline__{project_name}_{selected_group}-{selected_condition}.csv")
-                df.to_csv(output_filename, index=False)
-                print(f"Data saved to {output_filename}.")
+                safe_project = _safe_component(project_name)
+                safe_group = _safe_component(selected_group)
+                safe_cond = _safe_component(selected_condition)
+
+                output_filename = directory_path / (
+                    f"behavior_binned-ratio-timeline__{safe_project}_{safe_group}-{safe_cond}.csv"
+                )
+
+                output_path_for_write = _win_long_path(output_filename)
+
+                with open(output_path_for_write, "w", newline="", encoding="utf-8") as f:
+                    df.to_csv(f, index=False)
+
+                print(f"Data saved to {output_filename} (len={len(str(output_filename))}).")
 
             else:
-                raise ValueError(f"Selected group '{selected_group}' or condition '{selected_condition}' not found in the dataset.")
+                raise ValueError(
+                    f"Selected group '{selected_group}' or condition '{selected_condition}' not found in the dataset."
+                )
 
         plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust layout to make room for the main title
 
-        # Create a single legend below all subplots
         handles, labels = [], []
         for color, name in zip(behavior_colors, behavior_names):
             handles.append(plt.Line2D([0], [0], color=color, lw=4))
@@ -109,12 +173,15 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
 
         fig.legend(handles, labels, loc='lower center', ncol=len(behavior_names), bbox_to_anchor=(0.5, -0.05))
 
-        # Save SVG
-        save_path_svg = os.path.join(directory_path,
-                                     f"behavior_binned-ratio-timeline_{project_name}_{selected_group}.svg")
-        plt.savefig(save_path_svg, format='svg', bbox_inches='tight')
+        safe_project = _safe_component(project_name)
+        safe_group = _safe_component(selected_group)
 
-        # Add the figure to the list
+        save_path_svg = directory_path / f"behavior_binned-ratio-timeline_{safe_project}_{safe_group}.svg"
+        save_path_svg_for_write = _win_long_path(save_path_svg)
+
+        fig.savefig(save_path_svg_for_write, format='svg', bbox_inches='tight')
+        print(f"SVG saved to {save_path_svg} (len={len(str(save_path_svg))}).")
+
         figs.append(fig)
 
     return figs

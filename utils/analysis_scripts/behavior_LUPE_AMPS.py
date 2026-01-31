@@ -14,10 +14,6 @@ except Exception:
 
 # Helper Functions
 def find_bouts(binary_data: np.ndarray, min_frames: int):
-    """
-    Identify bout starts/ends requiring min_frames consecutive 1s for validity.
-    binary_data: 1D array of 0/1
-    """
     bout_starts = []
     bout_ends = []
 
@@ -55,7 +51,6 @@ def calculate_behavior_statistics(
     """
     n_frames, n_animals = behavior_matrix.shape
     if bin_length_min <= 0:
-        # Treat as one bin spanning the input window
         n_bins = 1
         bin_length_frames = n_frames
     else:
@@ -739,15 +734,15 @@ def behavior_LUPE_AMPS(
         raise ValueError("project_name is required")
     project_name = str(project_name).strip().rstrip("/\\")
 
-    # Paths / model inputs (streamlit project structure)
-    base_data_dir = (
-        f"./LUPEAPP_processed_dataset/{project_name}/figures/"
-        f"behaviors_csv_raw-classification/frames"
+    # Paths / model inputs (streamlit project structure) - FIXED FOR CROSS-PLATFORM
+    base_data_dir = os.path.join(
+        ".", "LUPEAPP_processed_dataset", project_name, "figures",
+        "behaviors_csv_raw-classification", "frames"
     )
 
-    output_base_dir = (
-        f"./LUPEAPP_processed_dataset/{project_name}/figures/"
-        f"behaviors_LUPE-AMPS"
+    output_base_dir = os.path.join(
+        ".", "LUPEAPP_processed_dataset", project_name, "figures",
+        "behaviors_LUPE-AMPS"
     )
     os.makedirs(output_base_dir, exist_ok=True)
 
@@ -1085,7 +1080,8 @@ def behavior_LUPE_AMPS(
 
                         df_matrix = pd.DataFrame(mean_trans, index=behaviors_csv, columns=behaviors_csv)
                         df_matrix.index.name = 'FROM_Behavior'
-                        filename_clean = f'{project_name}_behavior_trans_{group}_{cond}_State{state}'.replace('/', '_').replace(' ', '_')
+                        # SHORTENED FILENAME
+                        filename_clean = f'behavior_trans_{group}_{cond}_State{state}'.replace('/', '_').replace(' ', '_')
                         df_matrix.to_csv(os.path.join(output_dir_behavior_trans, f'{filename_clean}.csv'))
 
                 fig.subplots_adjust(right=0.92)
@@ -1102,7 +1098,8 @@ def behavior_LUPE_AMPS(
                     y=1.01,
                 )
 
-                fig_filename = f'{project_name}_behavior_transitions_per_state_{group}'
+                # SHORTENED FILENAME
+                fig_filename = f'behavior_transitions_per_state_{group}'
                 plt.savefig(os.path.join(output_dir_behavior_trans, f'{fig_filename}.png'), dpi=300, bbox_inches='tight')
                 plt.savefig(os.path.join(output_dir_behavior_trans, f'{fig_filename}.svg'), bbox_inches='tight')
                 plt.close(fig)
@@ -1110,8 +1107,9 @@ def behavior_LUPE_AMPS(
                 print(f"[LUPE-AMPS]   - Saved behavior transitions for {group}")
 
             df_all_behavior_trans = pd.DataFrame(all_behavior_trans_data)
+            # SHORTENED FILENAME
             df_all_behavior_trans.to_csv(
-                os.path.join(output_dir_behavior_trans, f'{project_name}_behavior_transitions_per_state_all.csv'),
+                os.path.join(output_dir_behavior_trans, 'behavior_transitions_per_state_all.csv'),
                 index=False,
             )
 
@@ -1197,7 +1195,8 @@ def behavior_LUPE_AMPS(
 
                     df_matrix = pd.DataFrame(mean_trans, index=state_labels_full, columns=state_labels_full)
                     df_matrix.index.name = 'FROM_State'
-                    filename_clean = f'{project_name}_state_trans_{group}_{cond}'.replace('/', '_').replace(' ', '_')
+                    # SHORTENED FILENAME
+                    filename_clean = f'state_trans_{group}_{cond}'.replace('/', '_').replace(' ', '_')
                     df_matrix.to_csv(os.path.join(output_dir_state_trans, f'{filename_clean}.csv'))
 
                 for idx in range(n_conds, n_rows * n_cols):
@@ -1213,7 +1212,8 @@ def behavior_LUPE_AMPS(
                 )
                 plt.tight_layout()
 
-                fig_filename = f'{project_name}_state_transitions_{group}'
+                # SHORTENED FILENAME
+                fig_filename = f'state_transitions_{group}'
                 plt.savefig(os.path.join(output_dir_state_trans, f'{fig_filename}.png'), dpi=300, bbox_inches='tight')
                 plt.savefig(os.path.join(output_dir_state_trans, f'{fig_filename}.svg'), bbox_inches='tight')
                 plt.close(fig)
@@ -1221,8 +1221,9 @@ def behavior_LUPE_AMPS(
                 print(f"[LUPE-AMPS]   - Saved state transitions for {group}")
 
             df_all_state_trans = pd.DataFrame(all_state_trans_data)
+            # SHORTENED FILENAME
             df_all_state_trans.to_csv(
-                os.path.join(output_dir_state_trans, f'{project_name}_state_transitions_all.csv'),
+                os.path.join(output_dir_state_trans, 'state_transitions_all.csv'),
                 index=False,
             )
 
@@ -1263,8 +1264,9 @@ def behavior_LUPE_AMPS(
             ax.set_xticklabels(animal_labels, rotation=90, ha='center', fontsize=7)
 
             plt.tight_layout()
-            plt.savefig(os.path.join(output_dir_modelfit, f'{project_name}_model_fit_validation.png'), dpi=300, bbox_inches='tight')
-            plt.savefig(os.path.join(output_dir_modelfit, f'{project_name}_model_fit_validation.svg'), bbox_inches='tight')
+            # SHORTENED FILENAME
+            plt.savefig(os.path.join(output_dir_modelfit, 'model_fit_validation.png'), dpi=300, bbox_inches='tight')
+            plt.savefig(os.path.join(output_dir_modelfit, 'model_fit_validation.svg'), bbox_inches='tight')
             plt.close(fig)
 
             df_model_fit = pd.DataFrame({
@@ -1275,7 +1277,8 @@ def behavior_LUPE_AMPS(
                 'ShuffledModelFit_Mean': shuffled_mean,
                 'ShuffledModelFit_SEM': shuffled_sem
             })
-            df_model_fit.to_csv(os.path.join(output_dir_modelfit, f'{project_name}_model_fit.csv'), index=False)
+            # SHORTENED FILENAME
+            df_model_fit.to_csv(os.path.join(output_dir_modelfit, 'model_fit.csv'), index=False)
 
             print(f"[LUPE-AMPS] Model fit validation saved to: {output_dir_modelfit}/")
 
@@ -1298,8 +1301,9 @@ def behavior_LUPE_AMPS(
                 state_column_names[5]: state_fractions[:, 4],
                 state_column_names[6]: state_fractions[:, 5]
             })
+            # SHORTENED FILENAME
             df_state_fractions.to_csv(
-                os.path.join(output_dir_statefractions, f'{project_name}_individual_state_fractions.csv'),
+                os.path.join(output_dir_statefractions, 'individual_state_fractions.csv'),
                 index=False,
             )
 
@@ -1322,7 +1326,8 @@ def behavior_LUPE_AMPS(
                         })
 
             df_summary = pd.DataFrame(summary_data)
-            df_summary.to_csv(os.path.join(output_dir_statefractions, f'{project_name}_state_fractions_summary.csv'), index=False)
+            # SHORTENED FILENAME
+            df_summary.to_csv(os.path.join(output_dir_statefractions, 'state_fractions_summary.csv'), index=False)
 
             print(f"[LUPE-AMPS] Individual state fractions saved to: {output_dir_statefractions}/")
 
@@ -1365,17 +1370,20 @@ def behavior_LUPE_AMPS(
             df_frac = pd.DataFrame(total_fraction_state, columns=state_cols_descriptive, index=animal_names)
             df_frac['Group'] = group_labels
             df_frac['Condition'] = condition_labels
-            df_frac.to_csv(os.path.join(output_dir_section7, f'{project_name}_state_fraction_time.csv'))
+            # SHORTENED FILENAME
+            df_frac.to_csv(os.path.join(output_dir_section7, 'state_fraction_time.csv'))
 
             df_bouts = pd.DataFrame(n_bouts_state, columns=state_cols_descriptive, index=animal_names)
             df_bouts['Group'] = group_labels
             df_bouts['Condition'] = condition_labels
-            df_bouts.to_csv(os.path.join(output_dir_section7, f'{project_name}_state_bout_number.csv'))
+            # SHORTENED FILENAME
+            df_bouts.to_csv(os.path.join(output_dir_section7, 'state_bout_number.csv'))
 
             df_dur = pd.DataFrame(bout_duration_state, columns=state_cols_descriptive, index=animal_names)
             df_dur['Group'] = group_labels
             df_dur['Condition'] = condition_labels
-            df_dur.to_csv(os.path.join(output_dir_section7, f'{project_name}_state_bout_duration.csv'))
+            # SHORTENED FILENAME
+            df_dur.to_csv(os.path.join(output_dir_section7, 'state_bout_duration.csv'))
 
             print(f"[LUPE-AMPS] State statistics exported to: {output_dir_section7}")
 
@@ -1428,8 +1436,9 @@ def behavior_LUPE_AMPS(
                     print("[LUPE-AMPS] No timepoint state rows to export — skipping Section 7b/7c.")
                 else:
                     df_state_timepoints = pd.DataFrame(state_timepoint_rows)
+                    # SHORTENED FILENAME
                     df_state_timepoints.to_csv(
-                        os.path.join(output_dir_timepoints, f'{project_name}_state_timepoint_comparison.csv'),
+                        os.path.join(output_dir_timepoints, 'state_timepoint_comparison.csv'),
                         index=False,
                     )
                     print(f"[LUPE-AMPS] Timepoint state comparison saved to: {output_dir_timepoints}")
@@ -1521,7 +1530,8 @@ def behavior_LUPE_AMPS(
                                 plt.legend(frameon=False)
                                 plt.tight_layout()
 
-                                fname = f"{project_name}_timepoint_{group}_{st}_{metric_key}".replace('/', '_').replace(' ', '_')
+                                # SHORTENED FILENAME
+                                fname = f"timepoint_{group}_{st}_{metric_key}".replace('/', '_').replace(' ', '_')
                                 plt.savefig(os.path.join(metric_dirs[metric_key], f"{fname}.png"), dpi=300)
                                 plt.savefig(os.path.join(metric_dirs[metric_key], f"{fname}.svg"))
                                 plt.close(fig)
@@ -1606,12 +1616,14 @@ def behavior_LUPE_AMPS(
                 ax.legend(fontsize=8, frameon=False)
 
                 plt.tight_layout()
-                plt.savefig(os.path.join(output_dir_section8, f'{project_name}_state_occupancy_line_{group}.png'), dpi=300)
-                plt.savefig(os.path.join(output_dir_section8, f'{project_name}_state_occupancy_line_{group}.svg'))
+                # SHORTENED FILENAME
+                plt.savefig(os.path.join(output_dir_section8, f'state_occupancy_line_{group}.png'), dpi=300)
+                plt.savefig(os.path.join(output_dir_section8, f'state_occupancy_line_{group}.svg'))
                 plt.close(fig)
 
+            # SHORTENED FILENAME
             pd.DataFrame(occupancy_summary).to_csv(
-                os.path.join(output_dir_section8, f'{project_name}_state_occupancy_summary.csv'),
+                os.path.join(output_dir_section8, 'state_occupancy_summary.csv'),
                 index=False,
             )
 
@@ -1657,12 +1669,14 @@ def behavior_LUPE_AMPS(
                 ax.legend(fontsize=8, frameon=False)
 
                 plt.tight_layout()
-                plt.savefig(os.path.join(output_dir_section8, f'{project_name}_state_bouts_line_{group}.png'), dpi=300)
-                plt.savefig(os.path.join(output_dir_section8, f'{project_name}_state_bouts_line_{group}.svg'))
+                # SHORTENED FILENAME
+                plt.savefig(os.path.join(output_dir_section8, f'state_bouts_line_{group}.png'), dpi=300)
+                plt.savefig(os.path.join(output_dir_section8, f'state_bouts_line_{group}.svg'))
                 plt.close(fig)
 
+            # SHORTENED FILENAME
             pd.DataFrame(bouts_summary).to_csv(
-                os.path.join(output_dir_section8, f'{project_name}_state_bouts_summary.csv'),
+                os.path.join(output_dir_section8, 'state_bouts_summary.csv'),
                 index=False,
             )
 
@@ -1708,25 +1722,27 @@ def behavior_LUPE_AMPS(
                 ax.legend(fontsize=8, frameon=False)
 
                 plt.tight_layout()
-                plt.savefig(os.path.join(output_dir_section8, f'{project_name}_state_duration_line_{group}.png'), dpi=300)
-                plt.savefig(os.path.join(output_dir_section8, f'{project_name}_state_duration_line_{group}.svg'))
+                # SHORTENED FILENAME
+                plt.savefig(os.path.join(output_dir_section8, f'state_duration_line_{group}.png'), dpi=300)
+                plt.savefig(os.path.join(output_dir_section8, f'state_duration_line_{group}.svg'))
                 plt.close(fig)
 
+            # SHORTENED FILENAME
             pd.DataFrame(duration_summary).to_csv(
-                os.path.join(output_dir_section8, f'{project_name}_state_duration_summary.csv'),
+                os.path.join(output_dir_section8, 'state_duration_summary.csv'),
                 index=False,
             )
 
 
             print(f"[LUPE-AMPS] State visualizations saved to: {output_dir_section8}")
             print(f"[LUPE-AMPS] Summary CSVs exported:")
-            print(f"  - {project_name}_state_occupancy_summary.csv")
-            print(f"  - {project_name}_state_bouts_summary.csv")
-            print(f"  - {project_name}_state_duration_summary.csv")
+            print(f"  - state_occupancy_summary.csv")
+            print(f"  - state_bouts_summary.csv")
+            print(f"  - state_duration_summary.csv")
             print(f"[LUPE-AMPS] Per-group figures exported:")
-            print(f"  - {project_name}_state_occupancy_line_{{Group}}.png/svg")
-            print(f"  - {project_name}_state_bouts_line_{{Group}}.png/svg")
-            print(f"  - {project_name}_state_duration_line_{{Group}}.png/svg")
+            print(f"  - state_occupancy_line_{{Group}}.png/svg")
+            print(f"  - state_bouts_line_{{Group}}.png/svg")
+            print(f"  - state_duration_line_{{Group}}.png/svg")
 
             # Section 9: PCA PROJECTION - AMPS CALCULATION
             print("\n[LUPE-AMPS] Computing AMPS via PCA projection (Section 9)...")
@@ -1780,7 +1796,7 @@ def behavior_LUPE_AMPS(
                 general_behavior_scale = pca_projection[:, 0]
                 amps = pca_projection[:, 1]
 
-                # Save all AMPS scores
+                # Save all AMPS scores - SHORTENED FILENAME
                 df_amps = pd.DataFrame({
                     'Animal': animal_names,
                     'Group': group_labels,
@@ -1788,7 +1804,7 @@ def behavior_LUPE_AMPS(
                     'PC1_GeneralBehaviorScale': general_behavior_scale,
                     'PC2_AMPS': amps,
                 })
-                df_amps.to_csv(os.path.join(output_dir_section9, f'{project_name}_amps_scores.csv'), index=False)
+                df_amps.to_csv(os.path.join(output_dir_section9, 'amps_scores.csv'), index=False)
 
                 # Generate figures PER GROUP
                 for group in unique_groups:
@@ -1869,15 +1885,16 @@ def behavior_LUPE_AMPS(
                     fig.suptitle(f'AMPS Analysis — {group}', fontsize=14, fontweight='bold', y=1.02)
                     fig.tight_layout()
 
-                    fig.savefig(os.path.join(output_dir_section9, f'{project_name}_amps_projection_{group}.png'),
+                    # SHORTENED FILENAME
+                    fig.savefig(os.path.join(output_dir_section9, f'amps_projection_{group}.png'),
                                 dpi=300, bbox_inches='tight')
-                    fig.savefig(os.path.join(output_dir_section9, f'{project_name}_amps_projection_{group}.svg'),
+                    fig.savefig(os.path.join(output_dir_section9, f'amps_projection_{group}.svg'),
                                 bbox_inches='tight')
                     plt.close(fig)
 
                     print(f"[LUPE-AMPS]   - Saved AMPS projection for {group}")
 
-                # Summary CSV
+                # Summary CSV - SHORTENED FILENAME
                 amps_summary = []
                 for group in unique_groups:
                     for cond in unique_conditions_s9:
@@ -1898,7 +1915,7 @@ def behavior_LUPE_AMPS(
                         })
 
                 pd.DataFrame(amps_summary).to_csv(
-                    os.path.join(output_dir_section9, f'{project_name}_amps_summary_by_group.csv'),
+                    os.path.join(output_dir_section9, 'amps_summary_by_group.csv'),
                     index=False,
                 )
 
@@ -1947,8 +1964,9 @@ def behavior_LUPE_AMPS(
 
                     if len(amps_timepoint_rows) > 0:
                         df_amps_timepoints = pd.DataFrame(amps_timepoint_rows)
+                        # SHORTENED FILENAME
                         df_amps_timepoints.to_csv(
-                            os.path.join(output_dir_timepoints, f'{project_name}_amps_timepoint_comparison.csv'),
+                            os.path.join(output_dir_timepoints, 'amps_timepoint_comparison.csv'),
                             index=False,
                         )
                         print(f"[LUPE-AMPS] Timepoint AMPS comparison saved to: {output_dir_timepoints}")
@@ -2011,7 +2029,8 @@ def behavior_LUPE_AMPS(
                             plt.title(title)
                             plt.tight_layout()
 
-                            fname = f"{project_name}_timepoint_{fname_suffix}".replace('/', '_').replace(' ', '_').replace('-', '_')
+                            # SHORTENED FILENAME
+                            fname = f"timepoint_{fname_suffix}".replace('/', '_').replace(' ', '_').replace('-', '_')
                             plt.savefig(os.path.join(out_dir, f"{fname}.png"), dpi=300)
                             plt.savefig(os.path.join(out_dir, f"{fname}.svg"))
                             plt.close()
@@ -2154,8 +2173,9 @@ def behavior_LUPE_AMPS(
         ax.set_title("Mean Behavior Probability Across All Animals")
 
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir_section3, f"{project_name}_behavior_raster.png"), dpi=300)
-        plt.savefig(os.path.join(output_dir_section3, f"{project_name}_behavior_raster.svg"))
+        # SHORTENED FILENAME
+        plt.savefig(os.path.join(output_dir_section3, "behavior_raster.png"), dpi=300)
+        plt.savefig(os.path.join(output_dir_section3, "behavior_raster.svg"))
         plt.close(fig)
 
         # 3b. Probability over time by GROUP
@@ -2206,8 +2226,9 @@ def behavior_LUPE_AMPS(
                 ax.set_title(f"{group} - {behaviors[b]}")
 
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir_section3, f"{project_name}_behavior_probability_by_group.png"), dpi=300)
-        plt.savefig(os.path.join(output_dir_section3, f"{project_name}_behavior_probability_by_group.svg"))
+        # SHORTENED FILENAME
+        plt.savefig(os.path.join(output_dir_section3, "behavior_probability_by_group.png"), dpi=300)
+        plt.savefig(os.path.join(output_dir_section3, "behavior_probability_by_group.svg"))
         plt.close(fig)
 
         # 3c. Condition barplots (FractionTime / NumBouts / MeanDuration)
@@ -2250,8 +2271,9 @@ def behavior_LUPE_AMPS(
                 ax.set_title(beh_name)
 
             plt.tight_layout()
-            plt.savefig(os.path.join(output_dir_section3, f"{project_name}_{out_stub}.png"), dpi=300)
-            plt.savefig(os.path.join(output_dir_section3, f"{project_name}_{out_stub}.svg"))
+            # SHORTENED FILENAME
+            plt.savefig(os.path.join(output_dir_section3, f"{out_stub}.png"), dpi=300)
+            plt.savefig(os.path.join(output_dir_section3, f"{out_stub}.svg"))
             plt.close(fig)
 
         _barplot_metric(total_frac_time, "Fraction Time", "behavior_fraction_by_condition")
@@ -2324,8 +2346,9 @@ def behavior_LUPE_AMPS(
 
         if len(behavior_timepoint_rows) > 0:
             df_behavior_timepoints = pd.DataFrame(behavior_timepoint_rows)
+            # SHORTENED FILENAME
             df_behavior_timepoints.to_csv(
-                os.path.join(output_dir_timepoints, f"{project_name}_behavior_timepoint_comparison.csv"),
+                os.path.join(output_dir_timepoints, "behavior_timepoint_comparison.csv"),
                 index=False,
             )
             print(f"[LUPE-AMPS] Timepoint behavior comparison saved to: {output_dir_timepoints}")
@@ -2417,7 +2440,8 @@ def behavior_LUPE_AMPS(
                     plt.legend(frameon=False)
                     plt.tight_layout()
 
-                    fname = f"{project_name}_timepoint_{group}_{beh}_{metric_key}".replace("/", "_").replace(" ", "_")
+                    # SHORTENED FILENAME
+                    fname = f"timepoint_{group}_{beh}_{metric_key}".replace("/", "_").replace(" ", "_")
                     png_path = os.path.join(metric_dirs[metric_key], f"{fname}.png")
                     svg_path = os.path.join(metric_dirs[metric_key], f"{fname}.svg")
 
