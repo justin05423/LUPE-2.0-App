@@ -1,50 +1,81 @@
 import os
+import numpy as np
 import pandas as pd
 
-def behavior_timepoint_comparison(project_name, selected_groups, selected_conditions, time_ranges):
+from utils.meta import behavior_names
+from utils.analysis_scripts.per_mouse_stats import (
+    describe, save_per_mouse_csv, save_group_summary
+)
+
+
+def behavior_timepoint_comparison(project_name, selected_groups, selected_conditions, time_ranges, frame_rate=60):
     """
-    Compare behavior metrics across different time ranges and generate cohort summaries.
+    Compare behavior metrics across user-defined time windows.
+
+    Inputs are the per-second classification CSVs written by "Behavior CSV Classification"
+    (figures/behaviors_csv_raw-classification/seconds/<group>/<condition>/<file>.csv).
+
+    Outputs (figures/behavior_timepoint_comparison/):
+      - per_mouse/<group>/<condition>/<file>.csv: one row per (time window, behavior) with the
+        five indicators: Fraction Time, Total Frames, Bout Count, Bouts per Minute,
+        Mean Bout Duration (s), plus bout-duration SD / median / min / max.
+      - per_mouse/summary_across_mice_<group>-<condition>.csv: mean, SD, SEM, median, min, max
+        and n (mice) of each indicator per (time window, behavior).
 
     Parameters:
         project_name (str): Name of the project.
-        selected_groups (list): List of groups to analyze.
-        selected_conditions (list): List of conditions to analyze.
-        time_ranges (list): List of tuples representing time ranges in seconds (e.g., [(0, 600), (600, 1800)]).
+        selected_groups (list): Groups to analyze.
+        selected_conditions (list): Conditions to analyze.
+        time_ranges (list): Tuples of (start_s, end_s), e.g. [(0, 600), (600, 1800)]. Windows are [start, end).
+        frame_rate (int): Frames per second of the classification (default 60).
     """
     if len(time_ranges) < 2:
         raise ValueError("At least two time ranges are required for comparison.")
 
-    behavior_labels = ['still', 'walking', 'rearing', 'grooming', 'licking hindpaw L', 'licking hindpaw R']
-
     time_labels = [f"{start // 60}-{end // 60} min" for start, end in time_ranges]
+    bins = [start for start, _ in time_ranges] + [time_ranges[-1][1]]
 
-    input_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name, "figures", "behaviors_csv_raw-classification", "seconds")
-
-    analysis_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name, "figures", "behavior_timepoint_comparison")
+    base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
+    input_dir = os.path.join(base_dir, "figures", "behaviors_csv_raw-classification", "seconds")
+    analysis_dir = os.path.join(base_dir, "figures", "behavior_timepoint_comparison")
     os.makedirs(analysis_dir, exist_ok=True)
 
-    def calculate_behavior_metrics(data, frame_rate=60):
-        metrics = {}
-        unique_behaviors = data['behavior'].unique()
+    if not os.path.isdir(input_dir):
+        raise FileNotFoundError(
+            "Per-second classification CSVs not found. Run 'Behavior CSV Classification' first."
+        )
 
-        for behavior in unique_behaviors:
-            behavior_data = data[data['behavior'] == behavior]
+    indicator_cols = ['Fraction Time', 'Total Frames', 'Bout Count',
+                      'Bouts per Minute', 'Mean Bout Duration (s)']
 
-            fraction_time = len(behavior_data) / len(data)
-
-            bout_starts = (behavior_data.index.to_series().diff() > 1).cumsum()
-            bouts = behavior_data.groupby(bout_starts)
-
-            bouts_per_minute = len(bouts) / (len(data) / frame_rate / 60)
-
-            mean_bout_duration = bouts.size().mean() / frame_rate
-
-            metrics[behavior] = {
-                'Fraction Time': fraction_time,
-                'Bouts per Minute': bouts_per_minute,
-                'Mean Bout Duration (s)': mean_bout_duration
-            }
-        return metrics
+    def window_metrics(data):
+        """Five indicators per behavior for one mouse within one time window."""
+        rows = []
+        n_rows = len(data)
+        minutes = n_rows / frame_rate / 60 if n_rows else np.nan
+        for b, label in enumerate(behavior_names):
+            bdata = data[data['behavior'] == b]
+            total_frames = int(len(bdata))
+            if total_frames:
+                bout_id = (bdata.index.to_series().diff() > 1).cumsum()
+                bout_sizes = bdata.groupby(bout_id).size().values / frame_rate
+            else:
+                bout_sizes = np.array([])
+            d = describe(bout_sizes)
+            rows.append({
+                'Behavior': b,
+                'Behavior Label': label,
+                'Fraction Time': total_frames / n_rows if n_rows else np.nan,
+                'Total Frames': total_frames,
+                'Bout Count': int(d['n']),
+                'Bouts per Minute': d['n'] / minutes if minutes else np.nan,
+                'Mean Bout Duration (s)': d['mean'],
+                'Bout Duration SD (s)': d['sd'],
+                'Bout Duration Median (s)': d['median'],
+                'Bout Duration Min (s)': d['min'],
+                'Bout Duration Max (s)': d['max'],
+            })
+        return rows
 
     for group in selected_groups:
         for condition in selected_conditions:
@@ -52,88 +83,41 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
             if not os.path.isdir(group_cond_dir):
                 print(f"No directory found for group '{group}' and condition '{condition}'")
                 continue
-            for file_name in os.listdir(group_cond_dir):
+
+            per_mouse_frames = []
+            for file_name in sorted(os.listdir(group_cond_dir)):
                 if not file_name.endswith('.csv'):
                     continue
-                file_path = os.path.join(group_cond_dir, file_name)
-                df = pd.read_csv(file_path)
+                mouse = os.path.splitext(file_name)[0]
+                df = pd.read_csv(os.path.join(group_cond_dir, file_name))
+
+                file_bins = list(bins)
                 max_time = df['time_seconds'].max()
-                bins = [start for start, end in time_ranges] + [time_ranges[-1][1]]
-                if max_time < bins[-1]:
-                    print(f"Warning: Maximum time ({max_time}s) in {file_name} is less than the final bin end ({bins[-1]}s).")
-                    bins[-1] = max_time
+                if max_time < file_bins[-1]:
+                    print(f"Warning: max time ({max_time}s) in {file_name} is below the final window end "
+                          f"({file_bins[-1]}s); last window is truncated.")
+                    file_bins[-1] = max_time + 1.0 / frame_rate
+
                 try:
-                    df['time_group'] = pd.cut(df['time_seconds'], bins=bins, labels=time_labels, right=False)
+                    df['time_group'] = pd.cut(df['time_seconds'], bins=file_bins, labels=time_labels, right=False)
                 except ValueError as e:
-                    print(f"Error in pd.cut for file {file_name}: {e}")
+                    print(f"Error binning {file_name}: {e}")
                     continue
-                all_metrics = []
-                for time_group, group_data in df.groupby('time_group', observed=False):
-                    if not group_data.empty:
-                        metrics = calculate_behavior_metrics(group_data)
-                        for behavior, behavior_metrics in metrics.items():
-                            all_metrics.append({
-                                'Group': group,
-                                'Condition': condition,
-                                'Time Group': time_group,
-                                'Behavior': behavior,
-                                'Behavior Label': behavior_labels[int(behavior)],
-                                **behavior_metrics
-                            })
-                analysis_df = pd.DataFrame(all_metrics)
-                analysis_file_name = f'analysis_{file_name}'
-                analysis_file_path = os.path.join(analysis_dir, analysis_file_name)
-                analysis_df.to_csv(analysis_file_path, index=False)
-                print(f"Saved analysis for {file_name} to {analysis_file_path}")
 
-    print('Behavior analysis completed for all files.')
+                rows = []
+                for tg, gdata in df.groupby('time_group', observed=False):
+                    if gdata.empty:
+                        continue
+                    for r in window_metrics(gdata):
+                        rows.append({'Time Group': str(tg), **r})
+                pm = pd.DataFrame(rows)
+                save_per_mouse_csv(pm, analysis_dir, group, condition, mouse)
+                pm['file'] = mouse
+                per_mouse_frames.append(pm)
 
-    cohort_summary_dir = os.path.join(analysis_dir, "cohort_summaries")
-    os.makedirs(cohort_summary_dir, exist_ok=True)
+            if per_mouse_frames:
+                save_group_summary(pd.concat(per_mouse_frames, ignore_index=True), indicator_cols,
+                                   analysis_dir, group, condition, by=('Time Group', 'Behavior Label'))
+                print(f"Saved per-mouse timepoint CSVs and summary for {group} - {condition}")
 
-    def aggregate_cohort_data(group_name, condition_list):
-        all_metrics = []
-
-        for file_name in os.listdir(analysis_dir):
-            if file_name.endswith('.csv'):
-                if any(condition in file_name for condition in condition_list):
-                    file_path = os.path.join(analysis_dir, file_name)
-                    file_data = pd.read_csv(file_path)
-                    all_metrics.append(file_data)
-
-        if not all_metrics:
-            print(f"No matching files found for group '{group_name}' with conditions {condition_list}")
-            return None
-
-        combined_data = pd.concat(all_metrics, ignore_index=True)
-
-        if 'Time Group' not in combined_data.columns or 'Behavior' not in combined_data.columns:
-            raise ValueError("The analysis files are missing required columns ('Time Group' or 'Behavior').")
-
-        summary = combined_data.groupby(['Time Group', 'Behavior', 'Behavior Label']).agg({
-            'Fraction Time': ['mean', 'std'],  # Mean and standard deviation
-            'Bouts per Minute': ['mean', 'std'],
-            'Mean Bout Duration (s)': ['mean', 'std']
-        }).reset_index()
-
-        summary.columns = ['Time Group', 'Behavior', 'Behavior Label',
-                           'Fraction Time (mean)', 'Fraction Time (std)',
-                           'Bouts per Minute (mean)', 'Bouts per Minute (std)',
-                           'Mean Bout Duration (mean)', 'Mean Bout Duration (std)']
-
-        summary = summary.dropna(subset=[
-            'Fraction Time (mean)',
-            'Bouts per Minute (mean)',
-            'Mean Bout Duration (mean)'
-        ], how='all')
-
-        return summary
-
-    for group_name in selected_groups:
-        summary = aggregate_cohort_data(group_name, selected_conditions)
-        if summary is not None:
-            summary_file_path = os.path.join(cohort_summary_dir, f'{group_name}_cohort_summary.csv')
-            summary.to_csv(summary_file_path, index=False)
-            print(f"Saved cohort summary for group '{group_name}' to {summary_file_path}")
-
-    print("Cohort summaries created.")
+    print('Behavior timepoint comparison completed.')

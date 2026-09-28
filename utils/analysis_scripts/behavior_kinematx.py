@@ -15,6 +15,10 @@ if not os.path.join(os.path.abspath(''), '..') in sys.path:
 from utils.classification import load_model, load_features, load_data, weighted_smoothing, load_behaviors
 from utils.feature_utils import get_avg_kinematics
 from utils.meta import keypoints, behavior_names
+from utils.analysis_scripts.per_mouse_stats import (
+    save_figure,
+    describe, save_per_mouse_csv, save_group_summary
+)
 
 def behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects):
     """
@@ -26,6 +30,12 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
         selected_group (str): The group name to analyze (only one).
         selected_conditions (list): A list of condition names to analyze.
         bp_selects (str): The bodypart of interest (e.g., 'l_hindpaw').
+
+    Per-mouse outputs (per_mouse/<group>/<condition>/<file>.csv): one row per behavior with
+    n_bouts and descriptives of that mouse's per-bout displacement (mean, sd, sem, median,
+    min, max). The legacy per_file_avg_displacement/<file>_avg_displacement.csv is kept.
+    descriptive_stats_<condition>.csv (pooled bouts) is kept, and an across-mice summary
+    (n = files) of each mouse's mean displacement is saved per condition.
     """
     base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     model_path = os.path.join("model", "model.pkl")
@@ -57,6 +67,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
             raise ValueError(f"Bodypart '{bp_selects}' not found in keypoints.")
 
         all_files_bout_disp = {}
+        per_mouse_frames = []
         files_dict = behaviors[selected_group][selected_condition]
         for file_key in files_dict.keys():
             _, _, _, bout_disp_dict, _, _ = get_avg_kinematics(
@@ -72,6 +83,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
             all_files_bout_disp[file_key] = bout_disp_dict
 
             perfile_avg_rows = []
+            pm_rows = []
             for beh in behavior_names:
                 arr = bout_disp_dict.get(beh, np.array([]))
                 avg_disp = float(np.mean(arr)) if (arr.ndim == 1 and arr.size > 0) else 0.0
@@ -80,6 +92,21 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
                     'Behavior': beh,
                     'AvgDisplacement': avg_disp
                 })
+                d = describe(arr if arr.ndim == 1 else np.array([]))
+                pm_rows.append({
+                    'behavior': beh,
+                    'n_bouts': d['n'],
+                    'displacement_mean': d['mean'],
+                    'displacement_sd': d['sd'],
+                    'displacement_sem': d['sem'],
+                    'displacement_median': d['median'],
+                    'displacement_min': d['min'],
+                    'displacement_max': d['max'],
+                })
+            pm_df = pd.DataFrame(pm_rows)
+            save_per_mouse_csv(pm_df, bp_dir, selected_group, selected_condition, file_key)
+            pm_df['file'] = file_key
+            per_mouse_frames.append(pm_df)
 
             df_perfile_avg = pd.DataFrame(perfile_avg_rows)
             perfile_avg_path = os.path.join(
@@ -88,6 +115,11 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
             )
             df_perfile_avg.to_csv(perfile_avg_path, index=False)
             print(f"Saved per-file average displacement: {perfile_avg_path}")
+
+        if per_mouse_frames:
+            save_group_summary(pd.concat(per_mouse_frames, ignore_index=True),
+                               ['displacement_mean', 'displacement_median', 'n_bouts'],
+                               bp_dir, selected_group, selected_condition)
 
         behavioral_sums = {}
         for beh in behavior_names:
@@ -220,7 +252,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
         bp_dir,
         f"avg_displacement_heatmap.svg"
     )
-    plt.savefig(fig_path, format='svg', dpi=600, bbox_inches='tight')
+    save_figure(fig, fig_path)
     print(f"Saved combined heatmap figure: {fig_path}")
 
     return fig

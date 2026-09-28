@@ -6,6 +6,10 @@ import platform
 from pathlib import Path
 
 from utils.classification import load_behaviors
+from utils.analysis_scripts.per_mouse_stats import (
+    save_figure,
+    describe, save_per_mouse_csv, save_group_summary
+)
 
 def _safe_component(s: str) -> str:
     if s is None:
@@ -37,6 +41,11 @@ def _win_long_path(p: Path) -> str:
 def behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min):
     """
     Generate a binned-ratio timeline plot and save the results as CSV and SVG files.
+
+    Per-mouse outputs (per_mouse/<group>/<condition>/<file>.csv): one row per time bin with
+    the fraction of frames in each behavior, followed by summary rows (row_type = mean, sd,
+    sem, median, min, max) describing that mouse across bins. An across-mice summary
+    (n = files) of each mouse's mean bin ratio is saved per group-condition.
 
     Parameters:
         project_name (str): Name of the project.
@@ -121,6 +130,34 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
                         binned_behaviors.append(behavior_ratios)
                     behavior_ratios_files[file_name] = binned_behaviors
 
+                # Per-mouse CSVs: bin-by-bin ratios + descriptives across bins
+                per_mouse_frames = []
+                for file_name in file_keys:
+                    bins = behavior_ratios_files[file_name]
+                    pm = pd.DataFrame({
+                        'row_type': ['bin'] * len(bins),
+                        'time_bin': np.arange(len(bins)),
+                    })
+                    for b in range(len(behavior_names)):
+                        pm[behavior_names[b]] = [bins[k][b] for k in range(len(bins))]
+                    summary_rows = []
+                    for stat in ['mean', 'sd', 'sem', 'median', 'min', 'max']:
+                        rec = {'row_type': stat, 'time_bin': np.nan}
+                        for b in range(len(behavior_names)):
+                            rec[behavior_names[b]] = describe(pm[behavior_names[b]].values)[stat]
+                        summary_rows.append(rec)
+                    pm = pd.concat([pm, pd.DataFrame(summary_rows)], ignore_index=True)
+                    save_per_mouse_csv(pm, str(directory_path), selected_group, selected_condition, file_name)
+                    per_mouse_frames.append(pd.DataFrame({
+                        'behavior': behavior_names,
+                        'mean_bin_ratio': [describe(pm.loc[pm.row_type == 'bin', bn].values)['mean']
+                                           for bn in behavior_names],
+                        'file': file_name,
+                    }))
+                if per_mouse_frames:
+                    save_group_summary(pd.concat(per_mouse_frames, ignore_index=True), ['mean_bin_ratio'],
+                                       str(directory_path), selected_group, selected_condition)
+
                 data_to_save = {'Time_bin': np.arange(int(n_bins))}
 
                 for b in range(len(behavior_names)):
@@ -179,9 +216,9 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
         save_path_svg = directory_path / f"behavior_binned-ratio-timeline_{safe_project}_{safe_group}.svg"
         save_path_svg_for_write = _win_long_path(save_path_svg)
 
-        fig.savefig(save_path_svg_for_write, format='svg', bbox_inches='tight')
-        print(f"SVG saved to {save_path_svg} (len={len(str(save_path_svg))}).")
+        save_figure(fig, save_path_svg_for_write)
+        print(f"SVG + PNG saved to {save_path_svg.with_suffix('')}.[svg|png]")
 
         figs.append(fig)
 
-    return figs
+    return figs

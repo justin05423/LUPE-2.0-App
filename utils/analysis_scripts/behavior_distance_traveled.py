@@ -3,10 +3,19 @@ import numpy as np
 import pandas as pd
 import os
 from utils.classification import load_data
+from utils.analysis_scripts.per_mouse_stats import (
+    save_figure,
+    describe, save_per_mouse_csv, save_group_summary
+)
 
 def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions):
     """
     Generate distance-traveled statistics and heatmaps for each group and condition.
+
+    Per-mouse outputs (per_mouse/<group>/<condition>/<file>.csv): total distance (cm),
+    n frames, duration (min), distance per minute, and descriptives of instantaneous speed
+    (cm/s: mean, sd, sem, median, min, max). The group CSV reports mean, SD, SEM, median,
+    min, max across mice (n = files) of total distance, and the cumulative distance.
 
     Parameters:
         project_name (str): Name of the project.
@@ -44,28 +53,54 @@ def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_
 
             distances_traveled = []
             cumulative_distance_traveled = 0.0
+            fps = 60
+            per_mouse_rows = []
+
+            # Ensure directory exists before any write
+            os.makedirs(directory_path, exist_ok=True)
 
             for file_key in poses_selected:
-                pose_data = poses_selected[file_key]
-                total_distance_pixels = 0.0
-                for frame in range(1, len(pose_data)):
-                    # Calculate Euclidean distance between consecutive frames in pixels
-                    distance_pixels = np.linalg.norm(
-                        pose_data[frame][bodypart_idx:bodypart_idx + 2] - pose_data[frame - 1][
-                                                                          bodypart_idx:bodypart_idx + 2])
-                    total_distance_pixels += distance_pixels
-                # Convert total distance from pixels to units
-                total_distance = total_distance_pixels * pixels_to_units
+                pose_data = np.asarray(poses_selected[file_key], dtype=float)
+                xy = pose_data[:, bodypart_idx:bodypart_idx + 2]
+                # Euclidean distance between consecutive frames (pixels -> units)
+                step = np.linalg.norm(np.diff(xy, axis=0), axis=1) * pixels_to_units
+                total_distance = float(np.sum(step))
                 # Append to list and update cumulative distance traveled
                 distances_traveled.append(total_distance)
                 cumulative_distance_traveled += total_distance
 
+                # Per-mouse indicator stats
+                n_frames = int(len(pose_data))
+                duration_min = n_frames / fps / 60.0
+                speed = step * fps  # units per second
+                sp = describe(speed)
+                pm_df = pd.DataFrame([{
+                    'total_distance_' + unit: total_distance,
+                    'n_frames': n_frames,
+                    'duration_min': duration_min,
+                    'distance_per_min_' + unit: total_distance / duration_min if duration_min else np.nan,
+                    f'speed_mean_{unit}_per_s': sp['mean'],
+                    f'speed_sd_{unit}_per_s': sp['sd'],
+                    f'speed_sem_{unit}_per_s': sp['sem'],
+                    f'speed_median_{unit}_per_s': sp['median'],
+                    f'speed_min_{unit}_per_s': sp['min'],
+                    f'speed_max_{unit}_per_s': sp['max'],
+                }])
+                save_per_mouse_csv(pm_df, directory_path, group, condition, file_key)
+                pm_df['file'] = file_key
+                per_mouse_rows.append(pm_df)
+
             distances_traveled = np.array(distances_traveled)
 
-            # Calculate statistics
-            average_distance = np.mean(distances_traveled)
-            standard_deviation = np.std(distances_traveled)
-            sem = standard_deviation / np.sqrt(len(distances_traveled))
+            # Across-mice summary (n = files)
+            if per_mouse_rows:
+                save_group_summary(pd.concat(per_mouse_rows, ignore_index=True),
+                                   ['total_distance_' + unit, 'distance_per_min_' + unit,
+                                    f'speed_mean_{unit}_per_s'],
+                                   directory_path, group, condition, by=())
+
+            # Calculate statistics across mice
+            d = describe(distances_traveled)
 
             # Save statistics to CSV using pandas (cross-platform compatible)
             stats_data = {
@@ -73,19 +108,24 @@ def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_
                     'Average distance traveled',
                     'Standard deviation',
                     'Standard error of the mean (SEM)',
+                    'Median distance traveled',
+                    'Minimum distance traveled',
+                    'Maximum distance traveled',
+                    'Number of mice',
                     'Cumulative distance traveled'
                 ],
                 'Value': [
-                    f'{average_distance:.2f} {unit}',
-                    f'{standard_deviation:.2f} {unit}',
-                    f'{sem:.2f} {unit}',
+                    f"{d['mean']:.2f} {unit}",
+                    f"{d['sd']:.2f} {unit}",
+                    f"{d['sem']:.2f} {unit}",
+                    f"{d['median']:.2f} {unit}",
+                    f"{d['min']:.2f} {unit}",
+                    f"{d['max']:.2f} {unit}",
+                    f"{d['n']}",
                     f'{cumulative_distance_traveled:.2f} {unit}'
                 ]
             }
             df = pd.DataFrame(stats_data)
-
-            # Ensure directory exists before each write
-            os.makedirs(directory_path, exist_ok=True)
 
             output_filename = os.path.join(directory_path, f"behavior_distance_stats-{unit}_{group}_{condition}.csv")
             df.to_csv(output_filename, index=False)
@@ -107,7 +147,7 @@ def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_
 
             # Save the figure
             save_path = os.path.join(directory_path, f"behavior_distance-heatmap_{group}_{condition}.svg")
-            plt.savefig(save_path, format='svg', bbox_inches='tight')
+            save_figure(fig, save_path)
 
             # Add the figure to the list
             figs.append(fig)
