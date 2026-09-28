@@ -4,6 +4,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from utils.classification import load_behaviors
 from utils.meta import behavior_names, behavior_colors
+from utils.analysis_scripts.per_mouse_stats import (
+    save_figure,
+    bout_metrics, save_per_mouse_csv, save_group_summary, INDICATOR_COLS
+)
 
 def behavior_total_frames(project_name, selected_groups, selected_conditions):
     """
@@ -11,6 +15,9 @@ def behavior_total_frames(project_name, selected_groups, selected_conditions):
     selected group and condition. For each group-condition combination, the function:
       - Aggregates the behavior predictions from all files.
       - Saves a CSV file summarizing the counts.
+      - Saves one CSV per mouse/file (per_mouse/<group>/<condition>/<file>.csv) with
+        percent_time, total_frames, bout_count, mean_bout_duration_s and bouts_per_min
+        per behavior, plus an across-mice summary (mean, SD, SEM, median, min, max, n).
       - Creates a pie chart subplot.
     Finally, the overall figure is saved as an SVG and returned.
 
@@ -82,6 +89,18 @@ def behavior_total_frames(project_name, selected_groups, selected_conditions):
                 )
                 df.to_csv(csv_filename, index=False)
 
+                # Per-mouse indicator stats (one CSV per file) + across-mice summary
+                per_mouse_frames = []
+                for file_name in file_keys:
+                    pm = bout_metrics(behaviors[selected_group][selected_condition][file_name], fps=60)
+                    save_per_mouse_csv(pm, directory_path, selected_group, selected_condition, file_name)
+                    pm['file'] = file_name
+                    per_mouse_frames.append(pm)
+                if per_mouse_frames:
+                    save_group_summary(pd.concat(per_mouse_frames, ignore_index=True),
+                                       INDICATOR_COLS, directory_path,
+                                       selected_group, selected_condition)
+
                 # Create the pie chart.
                 ax[row, col].pie(
                     df['values'],
@@ -107,6 +126,6 @@ def behavior_total_frames(project_name, selected_groups, selected_conditions):
     # Save the overall figure as an SVG (shortened filename).
     svg_filename = os.path.join(directory_path, "behavior_total-frames.svg")
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    fig.savefig(svg_filename, dpi=600, bbox_inches='tight')
+    save_figure(fig, svg_filename)
     plt.close(fig)
     return fig

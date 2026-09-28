@@ -492,43 +492,71 @@ def analysis_workflow():
     # Dynamic analysis description (shows context for the selected analysis)
     analysis_help = {
         "Behavior Binned-Ratio Timeline": (
-            "This analysis auto-detects your project’s groups/conditions, computes mean ± SEM behavior ratios "
-            "across consecutive bins, and saves one SVG per group plus one CSV per group–condition. "
-            "Select a time-bin size (minutes), then run."
+            "Computes the fraction of frames in each behavior per consecutive time bin and plots mean ± SEM across mice. "
+            "Saves one SVG + PNG per group and one CSV per group–condition (mean and SEM per bin). "
+            "Per mouse: per_mouse/<group>/<condition>/<file>.csv with bin-by-bin ratios plus mean/SD/SEM/median/min/max across bins, "
+            "and summary_across_mice_<group>-<condition>.csv. Select a time-bin size (minutes), then run."
         ),
         "Distance Traveled Heatmaps": (
-            "This analysis computes total and average distance traveled (mean, SD, SEM, cumulative) from pose trajectories "
-            "and renders a 2D position heatmap for each group–condition. The app auto-detects "
-            "groups/conditions and saves one SVG heatmap per group–condition plus a CSV of summary statistics."
+            "Computes distance traveled from the tail-base trajectory and renders a 2D position heatmap for each group–condition, "
+            "saved as SVG + PNG. The group CSV reports mean, SD, SEM, median, min, max across mice and the cumulative distance. "
+            "Per mouse: total distance, distance/min and speed descriptives (mean, SD, SEM, median, min, max) in per_mouse/, "
+            "plus summary_across_mice_<group>-<condition>.csv."
         ),
         "Behavior CSV Classification": (
-            "This analysis exports raw behavior classifications as CSVs at per-frame and per-second resolution for each file, organized by group/condition."
+            "Exports raw behavior classifications as CSVs at per-frame and per-second resolution for each file, organized by group/condition. "
+            "Required before Behavior Timepoint Comparison and Behavior Binned Mouse Screening. "
+            "Per mouse: a summary CSV in per_mouse/ with percent time, total frames, bout count, mean bout duration and bouts/min per behavior."
         ),
         "Behavior Bout Counts": (
-            "This analysis counts behavior bouts (transitions) per file and aggregates them by group–condition to compute mean ± SD, rendering horizontal bar charts."
+            "Counts behavior bouts per file, normalizes each file by its own duration (bouts/min), and plots horizontal bar charts (mean ± SD across mice) per group–condition, saved as SVG + PNG. "
+            "The group CSV reports mean, SD, SEM, median, min, max and n across mice for both bouts/min and raw counts. "
+            "Per mouse: raw counts as a wide matrix (behavior_instance-counts_raw/) and the five indicators per behavior in per_mouse/, "
+            "plus summary_across_mice_<group>-<condition>.csv."
         ),
         "Behavior Bout Durations": (
-            "This analysis parses contiguous behavior bouts from your predictions, converts their lengths to seconds (60 fps by default), computes per-bout durations for each behavior across your project’s groups/conditions, and visualizes the distributions as horizontal boxplots for each group–condition."
+            "Parses contiguous behavior bouts, converts their lengths to seconds (60 fps), and plots per-bout duration distributions as horizontal boxplots "
+            "per group–condition with one dot per mouse (median bout duration) overlaid; the x-axis is shared and scaled to the largest whisker. A log-scale copy is saved to log_scale/. "
+            "A companion bar chart shows mean bout duration (mean ± SEM across mice). Both saved as SVG + PNG with a CSV of all bouts. "
+            "Per mouse: bout-duration descriptives (n, mean, SD, SEM, median, min, max, total) per behavior in per_mouse/, "
+            "plus summary_across_mice_<group>-<condition>.csv."
         ),
         "Behavior Location": (
-            "This analysis maps where each behavior occurs in the arena by aggregating tail-base positions during that behavior into 2D density heatmaps for each selected group–condition (with the arena outline overlaid). It uses your project’s pose + behavior data and saves one SVG per behavior (per group–condition)."
+            "Maps where each behavior occurs in the arena by aggregating tail-base positions into 2D density heatmaps per group–condition, "
+            "with the arena outline overlaid. Saves one SVG + PNG per behavior. "
+            "Per mouse: tail-base distance-from-center descriptives (mean, SD, SEM, median, min, max) per behavior in per_mouse/, "
+            "plus summary_across_mice_<group>-<condition>.csv. Optionally also one six-panel image per animal (SVG + PNG)."
         ),
         "Behavior Total Frames": (
-            "This analysis calculates the percent of total frames spent in each behavior for your selected group–condition(s) by pooling all files, and visualizes the distribution as donut pie charts."
+            "Calculates the percent of total frames spent in each behavior by pooling all files per group–condition and plots donut charts, "
+            "saved as SVG + PNG with a CSV of frame counts. "
+            "Per mouse: percent time, total frames, bout count, mean bout duration and bouts/min per behavior in per_mouse/, "
+            "plus summary_across_mice_<group>-<condition>.csv."
         ),
         "Behavior Transitions": (
-            "This analysis builds behavior→behavior transition matrices for each selected group–condition by aggregating across files, zeroing self-transitions, and row-normalizing to probabilities."
+            "Builds behavior→behavior transition matrices per group–condition by aggregating across files, zeroing self-transitions and "
+            "row-normalizing to probabilities. Saves annotated and unannotated heatmaps as SVG + PNG plus one CSV per group–condition. "
+            "Per mouse: each animal's count and probability matrix in per_mouse/, plus summary_across_mice_<group>-<condition>.csv "
+            "(mean, SD, SEM, median, min, max of every transition). Optionally also one transition heatmap per animal (SVG + PNG)."
         ),
         "Behavior Timepoint Comparison": (
-            "This analysis compares behaviors across user-defined time windows by binning the per-second classification CSVs into those ranges and computing, for each behavior, Fraction Time, Bouts per Minute, and Mean Bout Duration (s), saving one analysis CSV per file. Inputs required: the number of time ranges (≥2) and each range in minutes entered as 'start-end' (e.g., 0-10, 11-30)."
+            "Compares behaviors across user-defined time windows using the per-second classification CSVs. For each window and behavior "
+            "computes Fraction Time, Total Frames, Bout Count, Bouts per Minute and Mean Bout Duration (s). "
+            "Per mouse: one CSV per file in per_mouse/<group>/<condition>/, plus summary_across_mice_<group>-<condition>.csv "
+            "(mean, SD, SEM, median, min, max, n). Requires Behavior CSV Classification first. Inputs: contiguous time windows in minutes (≥2)."
         ),
         "Behavior Kinematx": (
-            "This analysis measures how far the selected body part moves during each behavior, aggregates across files into 10-bin displacement distributions, and visualizes per-condition heatmaps while saving per-file average-displacement and descriptive-stats CSVs. Inputs: choose one group, one or more conditions, and a body part (bp_selects); everything else loads from the current project."
+            "Measures how far the selected body part moves during each behavior, pools bouts into 10-bin displacement distributions and "
+            "plots per-condition heatmaps, saved as SVG + PNG with pooled and per-file CSVs. "
+            "Per mouse: per-bout displacement descriptives (n, mean, SD, SEM, median, min, max) per behavior in per_mouse/, "
+            "plus summary_across_mice_<group>-<condition>.csv. Inputs: one group, one or more conditions, and a body part."
         ),
         "Behavior Binned Mouse Screening": (
-            "This analysis aggregates per-frame behavior labels into 1-minute bins for each mouse, producing per-mouse × time heatmaps (frames/min) and saving one CSV + one SVG per behavior. The app auto-detects mice from your project’s per-frame CSVs; optionally set a fixed heatmap maximum to standardize color scaling across plots."
+            "Aggregates per-frame behavior labels into 1-minute bins per mouse and produces one mice × time heatmap (frames/min) per behavior "
+            "for every selected group–condition, saved under <group>/<condition>/ as SVG + PNG with the matrix CSV. "
+            "Per mouse: the five indicators per behavior and frames-per-minute descriptives in per_mouse/; mouse_id_key.csv maps figure labels to full file names. "
+            "Requires Behavior CSV Classification first. Optionally set a fixed heatmap maximum; otherwise a shared per-behavior maximum keeps conditions comparable."
         ),
-        # You can add more entries here for other analyses later.
     }
     desc = analysis_help.get(analysis_type)
     if desc:
@@ -635,9 +663,26 @@ def analysis_workflow():
                       'r_hindpaw_digit5', 'genitalia', 'tail_base']
         bp_selects = st.selectbox("Select Bodypart:", bp_options, key="kinematx_bp")
 
+    # Additional inputs for Behavior Location analysis
+    per_animal_images = False
+    if analysis_type == "Behavior Location":
+        per_animal_images = st.checkbox(
+            "Also generate one location image per animal (six behavior panels each; can be many files)",
+            value=False, key="location_per_animal_images")
+
+    # Additional inputs for Behavior Transitions analysis
+    per_animal_transitions = False
+    if analysis_type == "Behavior Transitions":
+        per_animal_transitions = st.checkbox(
+            "Also generate one transition heatmap per animal (can be many files)",
+            value=False, key="transitions_per_animal_images")
+
     # Additional inputs for Behavior Binned Mouse Screening analysis
     if analysis_type == "Behavior Binned Mouse Screening":
         st.markdown("### Heatmap Settings")
+        label_max_chars = st.number_input(
+            "Max characters of the file name shown on the heatmap y-axis (full names are kept in the CSVs):",
+            min_value=5, max_value=200, value=40, step=5, key="screening_label_chars")
         set_heatmap_max = st.checkbox(
             "Do you want to set a fixed maximum for heatmaps? (Recommended: 1000, 2000, or 3000)",
             key="heatmap_max_toggle")
@@ -655,15 +700,17 @@ def analysis_workflow():
                 elif analysis_type == "Distance Traveled Heatmaps":
                     figs = behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions)
                 elif analysis_type == "Behavior Location":
-                    figs = behavior_location(project_name, selected_groups, selected_conditions)
+                    figs = behavior_location(project_name, selected_groups, selected_conditions,
+                                             per_animal_images=per_animal_images)
                 elif analysis_type == "Behavior Transitions":
-                    figs = behavior_transitions(project_name, selected_groups, selected_conditions)
+                    figs = behavior_transitions(project_name, selected_groups, selected_conditions,
+                                                per_animal_images=per_animal_transitions)
                 elif analysis_type == "Behavior CSV Classification":
                     behavior_csv_classification(project_name)
                 elif analysis_type == "Behavior Bout Counts":
                     fig = behavior_bout_counts(project_name, selected_groups, selected_conditions)
                 elif analysis_type == "Behavior Bout Durations":
-                    fig = behavior_bout_durations(project_name, selected_groups, selected_conditions)
+                    figs = behavior_bout_durations(project_name, selected_groups, selected_conditions)
                 elif analysis_type == "Behavior Total Frames":
                     fig = behavior_total_frames(project_name, selected_groups, selected_conditions)
                 elif analysis_type == "Behavior Timepoint Comparison":
@@ -676,12 +723,12 @@ def analysis_workflow():
                 elif analysis_type == "Behavior Kinematx":
                     fig = behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects)
                 elif analysis_type == "Behavior Binned Mouse Screening":
-                    heatmap_files = behavior_binned_mouse_screening(project_name, heatmap_max_value=heatmap_max)
-                    for behavior_name, svg_path in heatmap_files.items():
-                        st.markdown(f"**{behavior_name.capitalize()} Heatmap**")
-                        with open(svg_path, "r") as f:
-                            svg_content = f.read()
-                        st.components.v1.html(svg_content, height=800, scrolling=True)
+                    heatmap_files = behavior_binned_mouse_screening(
+                        project_name, heatmap_max_value=heatmap_max,
+                        selected_groups=selected_groups, selected_conditions=selected_conditions,
+                        label_max_chars=int(label_max_chars))
+                    # Keep results so the viewer below survives selectbox reruns
+                    st.session_state["screening_heatmap_files"] = heatmap_files
             except Exception as e:
                 st.error(f"Error during analysis: {e}")
                 return
@@ -691,7 +738,6 @@ def analysis_workflow():
         # Display the resulting figure(s)
         if analysis_type in [
             "Behavior Bout Counts",
-            "Behavior Bout Durations",
             "Behavior Total Frames",
             "Behavior Kinematx"
         ]:
@@ -700,10 +746,32 @@ def analysis_workflow():
             "Behavior Binned-Ratio Timeline",
             "Distance Traveled Heatmaps",
             "Behavior Location",
-            "Behavior Transitions"
+            "Behavior Transitions",
+            "Behavior Bout Durations"
         ]:
             for f in figs:
                 st.pyplot(f)
+
+    # Screening viewer: pick a group and condition, see that heatmap set (outside the button
+    # block so changing the selectors does not require re-running the analysis)
+    if analysis_type == "Behavior Binned Mouse Screening" and st.session_state.get("screening_heatmap_files"):
+        heatmap_files = st.session_state["screening_heatmap_files"]
+        st.markdown("### View Heatmaps")
+        v1, v2 = st.columns(2)
+        view_group = v1.selectbox("Group:", options=list(heatmap_files.keys()), key="screening_view_group")
+        view_condition = v2.selectbox("Condition:", options=list(heatmap_files[view_group].keys()),
+                                      key="screening_view_condition")
+        for behavior_name, svg_path in heatmap_files[view_group][view_condition].items():
+            png_path = os.path.splitext(svg_path)[0] + ".png"
+            st.markdown(f"**{behavior_name[0].upper() + behavior_name[1:]}** ({view_group} / {view_condition})")
+            if os.path.exists(png_path):
+                try:
+                    st.image(png_path, use_container_width=True)
+                except TypeError:  # older Streamlit
+                    st.image(png_path, use_column_width=True)
+            else:
+                with open(svg_path, "r") as f:
+                    st.components.v1.html(f.read(), height=600, scrolling=True)
 
 # LUPE-AMPS Analysis Workflow
 def pain_state_model_analysis():
