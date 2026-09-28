@@ -155,23 +155,35 @@ These models are pre-trained and integrated into the app.
 To update your local copy of LUPE-2.0-App to the latest version, follow these steps:
 
 1. Open your terminal or command prompt and navigate to the `LUPE-2.0-App` directory:
-   ```bash
+```bash
    cd LUPE-2.0-App
-   ```
+```
 2. Pull the latest changes from the GitHub repository:
-   ```bash
+```bash
+   git pull --ff-only origin main
+```
+   This keeps your local files that the app modifies (`model/model.pkl` and `utils/meta.py`) intact. Your processed data in `LUPEAPP_processed_dataset/` is never touched by updates.
+
+   If git refuses with a message like `error: Your local changes to the following files would be overwritten`, an update changed one of those files. Back them up, force the update, then restore the model:
+```bash
+   cp model/model.pkl ../model_backup.pkl
+   cp utils/meta.py ../meta_backup.py
    git fetch origin --prune
    git reset --hard origin/main
-   ```
-3. If there are updates to the Conda environment files (`LUPE2_App.yaml` or `LUPE2_App_Win.yaml`), update your environment accordingly:
-   ```bash
+   cp ../model_backup.pkl model/model.pkl
+```
+   Then re-run preprocessing step 1 for each of your projects so their groups and conditions are registered again (or copy the `groups_<project>` and `conditions_<project>` lines from `../meta_backup.py` back into `utils/meta.py`).
+3. If the release notes in `CHANGELOG.md` mention changes to the Conda environment files (`LUPE2_App.yaml` or `LUPE2_App_Win.yaml`), update your environment:
+```bash
    conda env update -f LUPE2_App.yaml --prune
-   ```
+```
    or for Windows:
-   ```bash
+```bash
    conda env update -f LUPE2_App_Win.yaml --prune
-   ```
+```
 4. Restart your environment and run the app as usual.
+
+> **Check after updating:** `model/model.pkl` should be much larger than a few hundred bytes. If it is tiny, it has been replaced by a placeholder; re-download the model from the link in the installation steps above and replace the file.
 
 ---
 
