@@ -11,6 +11,7 @@ if os.path.join(os.path.abspath(''), '..') not in sys.path:
 
 from utils.classification import load_behaviors
 from utils.meta import behavior_names
+from utils.timing import constant_fps
 from utils.analysis_scripts.per_mouse_stats import (
     bout_metrics, describe, save_per_mouse_csv, save_figure, safe_name
 )
@@ -18,7 +19,7 @@ from utils.analysis_scripts.per_mouse_stats import (
 
 def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heatmap_max_value=None,
                                     selected_groups=None, selected_conditions=None, label_max_chars=40,
-                                    fps=60):
+                                    fps_lookup=None):
     """
     Per-mouse screening: frames per 1-minute bin for every behavior, as one heatmap per
     behavior per group-condition (rows = mice, columns = minutes).
@@ -43,7 +44,7 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
         heatmap_max_value (int or float): Optional fixed vmax for all heatmaps.
         selected_groups / selected_conditions (list): Restrict to these; None = all found.
         label_max_chars (int): Y-axis labels are truncated to this many characters (full names stay in CSVs).
-        fps (int): Frames per second (default 60).
+        fps_lookup (callable): fps(group, condition); defaults to 60 fps everywhere.
 
     Returns:
         heatmap_files (dict): {group: {condition: {behavior: svg_path}}}
@@ -63,7 +64,7 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
     analysis_dir = output_analysis_dir or os.path.join(base_dir, "figures", "behavior_individual-mouse_screening")
     os.makedirs(analysis_dir, exist_ok=True)
 
-    frames_per_min = fps * 60
+    fps_lookup = fps_lookup or constant_fps()
     stats = ['mean', 'sd', 'sem', 'median', 'min', 'max']
 
     # ---- Pass 1: per-mouse matrices (behavior x minute) and per-mouse CSVs
@@ -88,7 +89,9 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
             continue
 
         predict = df['behavior'].astype(int).values
-        minute_bin = (np.arange(len(predict)) // frames_per_min).astype(int)
+        fps = fps_lookup(group, condition)
+        # Minute index per frame at this group/condition's frame rate (works for non-integer fps)
+        minute_bin = np.floor(np.arange(len(predict)) / (fps * 60.0)).astype(int)
         n_bins = int(minute_bin.max()) + 1
         matrix = np.zeros((len(behavior_names), n_bins), dtype=int)
         for b in range(len(behavior_names)):
@@ -102,7 +105,7 @@ def behavior_binned_mouse_screening(project_name, output_analysis_dir=None, heat
         pm = bout_metrics(predict, fps=fps)
         for stat in stats:
             pm[f'frames_per_min_{stat}'] = [describe(matrix[b])[stat] for b in range(len(behavior_names))]
-        save_per_mouse_csv(pm, analysis_dir, group, condition, mouse_id)
+        save_per_mouse_csv(pm, analysis_dir, group, condition, mouse_id, fps=fps)
 
     if not records:
         raise ValueError("No mice matched the selected groups/conditions.")

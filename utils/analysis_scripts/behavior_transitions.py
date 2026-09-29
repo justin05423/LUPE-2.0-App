@@ -9,6 +9,7 @@ import seaborn as sns
 from utils.classification import load_behaviors
 from utils.meta import behavior_names, behavior_colors
 from utils.analysis_scripts.per_mouse_stats import (
+    group_figures, safe_name,
     save_figure,
     save_per_mouse_csv, save_group_summary, per_mouse_dir, safe_name
 )
@@ -40,7 +41,7 @@ def behavior_transitions(project_name, selected_groups, selected_conditions, per
         selected_conditions (list): List of condition names.
 
     Returns:
-        figs (list): A list containing two matplotlib Figure objects (heatmap with annotations and without).
+        figs (list): annotated heatmaps (one figure per group) followed by unannotated ones.
     """
     # Set base directory for the app with cross-platform path handling
     base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
@@ -63,22 +64,15 @@ def behavior_transitions(project_name, selected_groups, selected_conditions, per
         return tm_array, tm_norm
 
     # Part 1: Heatmaps with Transition Motifs
-    def plot_heatmaps(annot, fmt, save_path):
-        rows_num = len(selected_groups)
-        cols_num = len(selected_conditions)
-        fig, ax = plt.subplots(rows_num, cols_num, figsize=(cols_num * 6, rows_num * 4), sharex=False, sharey=False)
-
-        if rows_num == 1 and cols_num == 1:
-            ax = np.array([[ax]])
-        elif rows_num == 1:
-            ax = np.array([ax])
-        elif cols_num == 1:
-            ax = np.array([[a] for a in ax])
-
-        for r in range(rows_num):
-            for c in range(cols_num):
-                group = selected_groups[r]
-                condition = selected_conditions[c]
+    def plot_heatmaps(annot, fmt, save_stem):
+        figs_out = []
+        for group, fig, ax_by_pair, layout in group_figures(
+                selected_groups, selected_conditions, panel_w=5.2, panel_h=4.2, max_cols=4, extra_h=0.5):
+            for condition in selected_conditions:
+                axp = ax_by_pair[(group, condition)]
+                r = layout['row_of'][(group, condition)]
+                c = layout['col_of'][(group, condition)]
+                rows_num = layout['rows']
                 all_count_tm = np.zeros((len(behavior_names), len(behavior_names)))
                 if group in behaviors and condition in behaviors[group]:
                     file_keys = list(behaviors[group][condition].keys())
@@ -139,29 +133,26 @@ def behavior_transitions(project_name, selected_groups, selected_conditions, per
                         cbar=True,
                         vmin=0,
                         vmax=1,
-                        ax=ax[r, c],
+                        ax=axp,
                         xticklabels=transmat_df.columns.tolist(),
                         yticklabels=transmat_df.index.tolist()
                     )
 
-                    ax[r, c].tick_params(axis='y', labelrotation=0, labelleft=True)
-                    ax[r, c].set_yticklabels(transmat_df.index.tolist(), rotation=0, ha='right', va='center', rotation_mode='anchor')
-                    if c == 0:
-                        ax[r, c].set_ylabel('Current behavior')
-                    if r == rows_num - 1:
-                        ax[r, c].set_xlabel('Next behavior')
-                    ax[r, c].set_title(f'{group} - {condition}')
+                    axp.tick_params(axis='y', labelrotation=0, labelleft=True)
+                    axp.set_yticklabels(transmat_df.index.tolist(), rotation=0, ha='right', va='center', rotation_mode='anchor')
+                    axp.set_ylabel('Current behavior')
+                    axp.set_xlabel('Next behavior')
+                    axp.set_title(f'{condition}  (n = {len(file_keys)} mice)', fontsize=10)
                 else:
-                    ax[r, c].text(0.5, 0.5, f"Data not found for\n{group} - {condition}",
-                                  horizontalalignment='center', verticalalignment='center')
-                    ax[r, c].set_title(f'{group} - {condition}')
-        fig.tight_layout(rect=[0, 0, 1, 0.96])
-        save_figure(fig, save_path)
-        return fig
+                    axp.text(0.5, 0.5, f"Data not found for\n{group} - {condition}",
+                             horizontalalignment='center', verticalalignment='center', transform=axp.transAxes)
+                    axp.set_title(f'{condition}', fontsize=10)
+            fig.suptitle(f'Group: {group}\nBehavior transition probabilities (self-transitions zeroed)', fontsize=11)
+            save_figure(fig, f"{save_stem}_{safe_name(group)}.svg")
+            figs_out.append(fig)
+        return figs_out
 
-    save_path_annot = os.path.join(heat_dir, "behavior_transitions_annot_true.svg")
-    fig_heat_annot = plot_heatmaps(True, ".2f", save_path_annot)
-    save_path_noannot = os.path.join(heat_dir, "behavior_transitions_annot_false.svg")
-    fig_heat_noannot = plot_heatmaps(False, ".2f", save_path_noannot)
+    figs_annot = plot_heatmaps(True, ".2f", os.path.join(heat_dir, "behavior_transitions_annot_true"))
+    figs_noannot = plot_heatmaps(False, ".2f", os.path.join(heat_dir, "behavior_transitions_annot_false"))
 
-    return [fig_heat_annot, fig_heat_noannot]
+    return figs_annot + figs_noannot

@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 
 from utils.classification import load_behaviors
 from utils.meta import behavior_names, behavior_colors  # Assumes these are defined in meta.py
+from utils.timing import constant_fps
 from utils.analysis_scripts.per_mouse_stats import (
+    group_figures, safe_name,
     save_figure, describe, save_per_mouse_csv, save_group_summary
 )
 
@@ -45,23 +47,22 @@ def _style_axis(ax):
         spine.set_color(SPINE_COLOR)
 
 
-def _axes_grid(rows, cols, panel_w=4.0, panel_h=3.5, **kw):
-    fig, ax = plt.subplots(rows, cols, figsize=(panel_w * cols, panel_h * rows), constrained_layout=True, **kw)
-    ax = np.array(ax, dtype=object).reshape(rows, cols)
-    return fig, ax
 
 
-def _draw_box_panels(ax, rows, cols, selected_groups, selected_conditions, durations, directory_path,
+def _draw_box_panels(ax_by_pair, layout, selected_groups, selected_conditions, durations, directory_path,
                      y_pos, log_scale, x_min, x_max, write_csv=True):
-    """Fill a rows x cols axes grid with pooled-bout boxplots plus per-mouse median dots."""
-    for row, selected_group in enumerate(selected_groups):
-        for col, selected_condition in enumerate(selected_conditions):
-            a = ax[row, col]
+    """Fill a panel grid with pooled-bout boxplots plus per-mouse median dots."""
+    rows = layout['rows']
+    for selected_group in selected_groups:
+        for selected_condition in selected_conditions:
             key = (selected_group, selected_condition)
+            a = ax_by_pair[key]
+            row = layout['row_of'][key]
+            col = layout['col_of'][key]
             if key not in durations:
                 a.text(0.5, 0.5, f"Data not found for\n{selected_group} - {selected_condition}",
                        ha='center', va='center', transform=a.transAxes)
-                a.set_title(f'{selected_group} - {selected_condition}')
+                a.set_title(f'{selected_condition}')
                 _style_axis(a)
                 continue
 
@@ -95,7 +96,7 @@ def _draw_box_panels(ax, rows, cols, selected_groups, selected_conditions, durat
                 patch.set_edgecolor('#333333')
             a.set_yticks(y_pos)
             a.set_yticklabels(behavior_names)
-            if row == 0 and col == 0:
+            if key == (selected_groups[0], selected_conditions[0]):
                 a.invert_yaxis()
 
             # One dot per mouse: that mouse's median bout duration, slight vertical jitter
@@ -108,16 +109,17 @@ def _draw_box_panels(ax, rows, cols, selected_groups, selected_conditions, durat
                               linewidth=0.5, zorder=4)
 
             _style_axis(a)
-            a.set_ylabel('')
-            a.set_xlabel('Behavior duration (s)' if row == rows - 1 else '')
-            a.set_title(f'{selected_group} - {selected_condition}  (n = {len(file_keys)} mice)')
+            a.set_ylabel('Behavior')
+            a.set_xlabel('Behavior duration (s)')
+            a.tick_params(labelbottom=True, labelleft=True)
+            a.set_title(f'{selected_condition}  (n = {len(file_keys)} mice)')
             if log_scale:
                 a.set_xscale('log')
             a.set_xlim(x_min, x_max)
 
 
 
-def behavior_bout_durations(project_name, selected_groups, selected_conditions, framerate=60):
+def behavior_bout_durations(project_name, selected_groups, selected_conditions, fps_lookup=None):
     """
     Bout-duration analysis for each selected group and condition.
 
@@ -137,8 +139,9 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
       - total_average_std_durations_per_file.csv: wide, one row per file (kept for compatibility).
 
     Returns:
-        [fig_box, fig_box_log, fig_bar]: linear boxplot, log boxplot, and mean-per-mouse bar chart.
+        list of figures: linear boxplots, log boxplots, then mean-per-mouse bar charts (one per group each).
     """
+    fps_lookup = fps_lookup or constant_fps()
     base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     behaviors = load_behaviors(os.path.join(base_dir, f"behaviors_{project_name}.pkl"))
 
@@ -151,7 +154,7 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
     for g in selected_groups:
         for c in selected_conditions:
             if g in behaviors and c in behaviors[g]:
-                durations[(g, c)] = {fn: get_duration_bouts(behaviors[g][c][fn], behavior_names, framerate)
+                durations[(g, c)] = {fn: get_duration_bouts(behaviors[g][c][fn], behavior_names, fps_lookup(g, c))
                                      for fn in behaviors[g][c]}
 
     # Shared x-limit: largest upper whisker across all panels and behaviors
@@ -166,29 +169,28 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
     x_max = max(pooled_whiskers) * 1.08 if pooled_whiskers and max(pooled_whiskers) > 0 else 6.0
     positives = [d[b][d[b] > 0].min() for files in durations.values() for d in files.values()
                  for b in range(len(behavior_names)) if (d[b] > 0).any()]
-    x_min_log = min(positives) * 0.8 if positives else 1.0 / framerate
+    x_min_log = min(positives) * 0.8 if positives else 1.0 / 60.0
 
-    rows, cols = len(selected_groups), len(selected_conditions)
     y_pos = np.arange(len(behavior_names))
     log_dir = os.path.join(directory_path, "log_scale")
     os.makedirs(log_dir, exist_ok=True)
 
     # ---- Figure 1 (linear) and Figure 1b (log): boxplots with per-mouse median dots
-    box_figs = {}
+    box_figs = {False: [], True: []}
     for log_scale in (False, True):
-        fig_box, ax = _axes_grid(rows, cols, sharex=True, sharey=True)
         x_min = x_min_log if log_scale else 0.0
-        box_figs[log_scale] = fig_box
-        _draw_box_panels(ax, rows, cols, selected_groups, selected_conditions, durations, directory_path,
-                         y_pos, log_scale, x_min, x_max, write_csv=not log_scale)
-        scale_note = ' (log scale)' if log_scale else ''
-        fig_box.suptitle(f'Bout durations{scale_note}: boxes = all bouts pooled, dots = per-mouse median',
-                         fontsize=10)
-        out = os.path.join(log_dir, "behavior_durations_log.svg") if log_scale \
-            else os.path.join(directory_path, "behavior_durations.svg")
-        save_figure(fig_box, out)
-    fig_box = box_figs[False]
-    fig_box_log = box_figs[True]
+        for g, fig_box, ax_by_pair, layout in group_figures(
+                selected_groups, selected_conditions, panel_w=6.0, panel_h=3.0, max_cols=1, extra_h=0.6,
+                sharex=True, sharey=True):
+            _draw_box_panels(ax_by_pair, layout, [g], selected_conditions, durations, directory_path,
+                             y_pos, log_scale, x_min, x_max, write_csv=not log_scale)
+            scale_note = ' (log scale)' if log_scale else ''
+            fig_box.suptitle(f'Group: {g}\nBout durations{scale_note}: boxes = all bouts pooled, '
+                             f'dots = per-mouse median', fontsize=11)
+            out = os.path.join(log_dir, f"behavior_durations_log_{safe_name(g)}.svg") if log_scale \
+                else os.path.join(directory_path, f"behavior_durations_{safe_name(g)}.svg")
+            save_figure(fig_box, out)
+            box_figs[log_scale].append(fig_box)
 
     # ---- Per-mouse CSVs, across-mice summaries, and the legacy wide CSV
     all_file_durations = []
@@ -217,7 +219,8 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                 })
             all_file_durations.append(record)
             pm_df = pd.DataFrame(pm_rows)
-            save_per_mouse_csv(pm_df, directory_path, selected_group, selected_condition, file_name)
+            save_per_mouse_csv(pm_df, directory_path, selected_group, selected_condition, file_name,
+                               fps=fps_lookup(selected_group, selected_condition))
             pm_df['file'] = file_name
             per_mouse_frames.append(pm_df)
         if per_mouse_frames:
@@ -230,16 +233,21 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
         os.path.join(directory_path, "total_average_std_durations_per_file.csv"), index=False)
 
     # ---- Figure 2: mean bout duration, mean ± SEM across mice (companion to bouts/min chart)
-    fig_bar, ax2 = _axes_grid(rows, cols, sharex=True, sharey=True)
-    for row, selected_group in enumerate(selected_groups):
-        for col, selected_condition in enumerate(selected_conditions):
-            a = ax2[row, col]
+    bar_figs = []
+    for selected_group, fig_bar, ax2_by_pair, layout2 in group_figures(
+            selected_groups, selected_conditions, panel_w=6.0, panel_h=3.0, max_cols=1, extra_h=0.6,
+            sharex=True, sharey=True):
+        rows = layout2['rows']
+        for selected_condition in selected_conditions:
             key = (selected_group, selected_condition)
+            a = ax2_by_pair[key]
+            row = layout2['row_of'][key]
+            col = layout2['col_of'][key]
             _style_axis(a)
             if key not in per_mouse_by_key:
                 a.text(0.5, 0.5, f"Data not found for\n{selected_group} - {selected_condition}",
                        ha='center', va='center', transform=a.transAxes)
-                a.set_title(f'{selected_group} - {selected_condition}')
+                a.set_title(f'{selected_condition}')
                 continue
             pm = per_mouse_by_key[key]
             with warnings.catch_warnings():
@@ -251,10 +259,16 @@ def behavior_bout_durations(project_name, selected_groups, selected_conditions, 
                    error_kw={'ecolor': 'black', 'capsize': 2, 'lw': 1})
             a.set_yticks(y_pos)
             a.set_yticklabels(behavior_names)
-            a.invert_yaxis() if row == 0 and col == 0 else None
-            a.set_title(f'{selected_group} - {selected_condition}  (n = {pm["file"].nunique()} mice)')
-            a.set_xlabel('Mean bout duration (s)' if row == rows - 1 else '')
-    fig_bar.suptitle('Mean bout duration per behavior (mean ± SEM across mice)', fontsize=10)
-    save_figure(fig_bar, os.path.join(directory_path, "behavior_durations_mean-per-mouse.svg"))
+            if key == (selected_group, selected_conditions[0]):
+                a.invert_yaxis()
+            a.set_title(f'{selected_condition}  (n = {pm["file"].nunique()} mice)')
+            a.set_xlabel('Mean bout duration (s)')
+            a.set_ylabel('Behavior')
+            a.tick_params(labelbottom=True, labelleft=True)
+        fig_bar.suptitle(f'Group: {selected_group}\nMean bout duration per behavior (mean ± SEM across mice)',
+                         fontsize=11)
+        save_figure(fig_bar, os.path.join(directory_path, f"behavior_durations_mean-per-mouse_{safe_name(selected_group)}.svg"))
+        bar_figs.append(fig_bar)
 
-    return [fig_box, fig_box_log, fig_bar]
+    # Order: all linear boxplots, then log versions, then bar charts (one figure per group in each)
+    return box_figs[False] + box_figs[True] + bar_figs

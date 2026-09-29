@@ -5,6 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-28
+
+### Added
+- Per-project recording frame rate. Set once on the Preprocessing tab (or edit later from the Analysis tab);
+  stored in `project_info_<project>.txt` under a `Timing:` section. The app shows the resulting recording
+  length per group/condition live ("112,500 frames each -> 30.00 min at 62.5 fps") so a wrong value is
+  obvious before any analysis runs. Optional per group/condition overrides for mixed-rate projects.
+- `utils/timing.py`: read/write of the Timing section, `fps_lookup(project)`, and the Streamlit widget.
+- Every per-mouse CSV now carries an `fps_used` column.
+- The frame-rate widget lists files whose length differs from the rest of their group/condition (e.g. a session that ended early).
+- README: "Recording frame rate" section explaining fixed-interval cameras (one frame every 16 ms = 62.5 fps, not 60).
+
+### Changed
+- One figure per group for Bout Counts, Bout Durations, Transitions, Location and Total Frames (file names now end in `_<group>`), so any number of groups and conditions stays readable. Bout Counts and Bout Durations stack conditions vertically with a shared x-axis for comparison down the column; Transitions, Total Frames and Location use a balanced grid of up to 4 panels across (5 conditions = 3 + 2, 10 = 4 + 4 + 2). Shared helpers `panel_grid` and `group_figures` in `per_mouse_stats.py`. Previously a fixed figure size squeezed many conditions into one row.
+- Bout Counts: behaviors now read top-down in the same order as Bout Durations; titles include n (mice); house style (light spines, x grid).
+- Transitions titles include n (mice). Bout Counts, Bout Durations and Transitions label both axes on every panel (ticks and labels are no longer hidden on shared axes).
+- All time-based metrics (bouts/min, bout durations, per-second CSVs, minute bins, binned-ratio bins,
+  timepoint windows, distance/min, speed, kinematx displacement) use the project frame rate instead of a
+  hard-coded 60. Projects without a Timing section still use 60, so existing results are unchanged.
+- Minute bins in Binned Mouse Screening and Binned-Ratio Timeline are computed from a float frame rate
+  (no truncation at non-integer fps).
+- LUPE-AMPS receives the project frame rate as `sampling_rate`; a warning is shown if selected
+  groups/conditions have different overrides (AMPS pools at the project default).
+- The classifier's own 60 fps (feature extraction) is unchanged and documented as a model constant.
+
+### Fixed
+- Behavior Timepoint Comparison computes time from the row index at the current frame rate, so per-second CSVs written at an earlier rate cannot shift the windows.
+- `st.image` compatibility across Streamlit versions (`width="stretch"`, `use_container_width`, `use_column_width`).
+
 ## [2.1.0] - 2026-09-28
 
 ### Added

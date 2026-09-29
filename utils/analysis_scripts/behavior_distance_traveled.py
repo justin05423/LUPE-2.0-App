@@ -3,12 +3,13 @@ import numpy as np
 import pandas as pd
 import os
 from utils.classification import load_data
+from utils.timing import constant_fps
 from utils.analysis_scripts.per_mouse_stats import (
     save_figure,
     describe, save_per_mouse_csv, save_group_summary
 )
 
-def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions):
+def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions, fps_lookup=None):
     """
     Generate distance-traveled statistics and heatmaps for each group and condition.
 
@@ -27,6 +28,7 @@ def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_
     """
 
     # Define the base directory using os.path.join for cross-platform compatibility
+    fps_lookup = fps_lookup or constant_fps()
     base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     poses_file = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
 
@@ -53,7 +55,7 @@ def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_
 
             distances_traveled = []
             cumulative_distance_traveled = 0.0
-            fps = 60
+            fps = fps_lookup(group, condition)
             per_mouse_rows = []
 
             # Ensure directory exists before any write
@@ -86,7 +88,7 @@ def behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_
                     f'speed_min_{unit}_per_s': sp['min'],
                     f'speed_max_{unit}_per_s': sp['max'],
                 }])
-                save_per_mouse_csv(pm_df, directory_path, group, condition, file_key)
+                save_per_mouse_csv(pm_df, directory_path, group, condition, file_key, fps=fps)
                 pm_df['file'] = file_key
                 per_mouse_rows.append(pm_df)
 

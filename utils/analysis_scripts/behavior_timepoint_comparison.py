@@ -3,12 +3,13 @@ import numpy as np
 import pandas as pd
 
 from utils.meta import behavior_names
+from utils.timing import constant_fps
 from utils.analysis_scripts.per_mouse_stats import (
     describe, save_per_mouse_csv, save_group_summary
 )
 
 
-def behavior_timepoint_comparison(project_name, selected_groups, selected_conditions, time_ranges, frame_rate=60):
+def behavior_timepoint_comparison(project_name, selected_groups, selected_conditions, time_ranges, fps_lookup=None):
     """
     Compare behavior metrics across user-defined time windows.
 
@@ -27,8 +28,9 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
         selected_groups (list): Groups to analyze.
         selected_conditions (list): Conditions to analyze.
         time_ranges (list): Tuples of (start_s, end_s), e.g. [(0, 600), (600, 1800)]. Windows are [start, end).
-        frame_rate (int): Frames per second of the classification (default 60).
+        fps_lookup (callable): fps(group, condition); defaults to 60 fps everywhere.
     """
+    fps_lookup = fps_lookup or constant_fps()
     if len(time_ranges) < 2:
         raise ValueError("At least two time ranges are required for comparison.")
 
@@ -48,7 +50,7 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
     indicator_cols = ['Fraction Time', 'Total Frames', 'Bout Count',
                       'Bouts per Minute', 'Mean Bout Duration (s)']
 
-    def window_metrics(data):
+    def window_metrics(data, frame_rate):
         """Five indicators per behavior for one mouse within one time window."""
         rows = []
         n_rows = len(data)
@@ -85,11 +87,15 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
                 continue
 
             per_mouse_frames = []
+            frame_rate = fps_lookup(group, condition)
             for file_name in sorted(os.listdir(group_cond_dir)):
                 if not file_name.endswith('.csv'):
                     continue
                 mouse = os.path.splitext(file_name)[0]
                 df = pd.read_csv(os.path.join(group_cond_dir, file_name))
+                # Time is recomputed from the row index at the CURRENT frame rate, so a stale
+                # time_seconds column (CSV written at an earlier rate) cannot shift the windows.
+                df['time_seconds'] = np.arange(len(df)) / frame_rate
 
                 file_bins = list(bins)
                 max_time = df['time_seconds'].max()
@@ -108,10 +114,10 @@ def behavior_timepoint_comparison(project_name, selected_groups, selected_condit
                 for tg, gdata in df.groupby('time_group', observed=False):
                     if gdata.empty:
                         continue
-                    for r in window_metrics(gdata):
+                    for r in window_metrics(gdata, frame_rate):
                         rows.append({'Time Group': str(tg), **r})
                 pm = pd.DataFrame(rows)
-                save_per_mouse_csv(pm, analysis_dir, group, condition, mouse)
+                save_per_mouse_csv(pm, analysis_dir, group, condition, mouse, fps=frame_rate)
                 pm['file'] = mouse
                 per_mouse_frames.append(pm)
 

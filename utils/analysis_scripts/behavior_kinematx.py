@@ -15,12 +15,13 @@ if not os.path.join(os.path.abspath(''), '..') in sys.path:
 from utils.classification import load_model, load_features, load_data, weighted_smoothing, load_behaviors
 from utils.feature_utils import get_avg_kinematics
 from utils.meta import keypoints, behavior_names
+from utils.timing import constant_fps
 from utils.analysis_scripts.per_mouse_stats import (
     save_figure,
     describe, save_per_mouse_csv, save_group_summary
 )
 
-def behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects):
+def behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects, fps_lookup=None):
     """
     Calculate and plot the average displacement of a selected bodypart across behaviors,
     saving one CSV per condition and returning a single figure with one subplot per condition.
@@ -37,6 +38,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
     descriptive_stats_<condition>.csv (pooled bouts) is kept, and an across-mice summary
     (n = files) of each mouse's mean displacement is saved per condition.
     """
+    fps_lookup = fps_lookup or constant_fps()
     base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
     model_path = os.path.join("model", "model.pkl")
     data_path = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
@@ -74,7 +76,7 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
                 files_dict[file_key],
                 poses[selected_group][selected_condition][file_key],
                 bodypart,
-                framerate=60
+                framerate=fps_lookup(selected_group, selected_condition)
             )
 
             for beh in bout_disp_dict:
@@ -104,7 +106,8 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
                     'displacement_max': d['max'],
                 })
             pm_df = pd.DataFrame(pm_rows)
-            save_per_mouse_csv(pm_df, bp_dir, selected_group, selected_condition, file_key)
+            save_per_mouse_csv(pm_df, bp_dir, selected_group, selected_condition, file_key,
+                               fps=fps_lookup(selected_group, selected_condition))
             pm_df['file'] = file_key
             per_mouse_frames.append(pm_df)
 
