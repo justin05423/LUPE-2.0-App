@@ -61,6 +61,19 @@ These models are pre-trained and integrated into the app.
 - ✅ **macOS** – fully supported  
 - ⚠️ **Linux** – supported with manual installation of certain packages
 
+### Video Recording Requirements
+
+<details>
+<summary><b>Frame rate: record at 60 fps, and tell LUPE the true rate</b> (click to expand)</summary>
+
+The behavior classifier was trained on 60 fps video and always extracts features at 60 fps. Record at or near 60 fps; substantially different rates (for example 30 fps) are not supported without validating the classifier on your own data.
+
+LUPE converts frames to seconds and minutes using the frame rate saved in each project (default 60). Cameras configured by frame interval often run faster than their nominal setting: one frame every 16 ms is 62.5 fps, not 60. Left at the default, every time-based metric (bouts/min, bout durations, minute bins, time windows) is then off by about 4%.
+
+Set the true rate on the **Preprocessing Workflow** tab under **Recording Frame Rate** before running analyses (if the camera was set by interval, enter 1000 / interval in ms). The app shows your recording lengths at the entered rate; check them against your protocol time, not the duration a video player reports, since players use the same nominal rate written in the file. If every file in a group reads long or short, the rate is wrong. If a single file differs, that session was simply recorded for a different time; leave the rate alone. The value is stored in the project's `project_info_<project>.txt` and can be changed later from the **LUPE Analysis** tab; only analyses need re-running after a change, not preprocessing.
+
+</details>
+
 ### Python Dependencies
 
 - Please refer to the `requirements.txt` file for all necessary Python libraries.

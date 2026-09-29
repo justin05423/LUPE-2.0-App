@@ -11,6 +11,7 @@ import matplotlib.patches as mpatches
 from utils.classification import load_behaviors, load_data
 from utils.meta import behavior_names, behavior_colors  # Make sure these are defined in meta.py
 from utils.analysis_scripts.per_mouse_stats import (
+    group_figures,
     save_figure,
     describe, save_per_mouse_csv, save_group_summary, per_mouse_dir, safe_name
 )
@@ -136,15 +137,14 @@ def behavior_location(project_name, selected_groups, selected_conditions, per_an
     for b, behav_name in enumerate(behavior_names):
         count = 0
 
-        fig = plt.figure(facecolor='#000000', figsize=(10, rows * 2.5 + 1))
-        fig.suptitle(behav_name, color=behavior_colors[b], fontsize=16, fontweight='bold', y=0.98)
+        for selected_group, fig, ax_by_pair, layout in group_figures(
+                selected_groups, selected_conditions, panel_w=3.2, panel_h=3.2, max_cols=4, extra_h=0.8):
+            fig.patch.set_facecolor('#000000')
+            fig.suptitle(f'{behav_name}\nGroup: {selected_group}', color=behavior_colors[b], fontsize=14, fontweight='bold')
 
-        for row in range(rows):
-            for col in range(cols):
-                ax = fig.add_subplot(rows, cols, count + 1)
-                ax.set_facecolor(None)
-                selected_group = selected_groups[row]
-                selected_condition = selected_conditions[col]
+            for selected_condition in selected_conditions:
+                ax = ax_by_pair[(selected_group, selected_condition)]
+                ax.set_facecolor('#000000')
 
                 # Convert the hex string to an RGB tuple
                 rgb_val = tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
@@ -181,18 +181,13 @@ def behavior_location(project_name, selected_groups, selected_conditions, per_an
 
                 ax.add_patch(circle)
                 ax.set_aspect('equal')
-                ax.invert_yaxis()  # invert y-axis for proper orientation
-                plt.axis('off')
-                plt.axis('equal')
-                ax.set_title(f'{selected_group} - {selected_condition}', color='white', fontsize=10)
-                count += 1
+                ax.set_xlim(center[0] - radius - 10, center[0] + radius + 10)
+                ax.set_ylim(center[1] + radius + 10, center[1] - radius - 10)  # inverted y for image orientation
+                ax.axis('off')
+                ax.set_title(f'{selected_condition}', color='white', fontsize=10)
 
-        plt.tight_layout(rect=[0, 0, 1, 0.92])
-        plt.subplots_adjust(top=0.88, hspace=0.3)
-
-        save_path_svg = os.path.join(directory_path, f"behavior_location_{behav_name}.svg")
-        save_figure(fig, save_path_svg)
-
-        figs.append(fig)
+            save_path_svg = os.path.join(directory_path, f"behavior_location_{behav_name}_{safe_name(selected_group)}.svg")
+            save_figure(fig, save_path_svg, facecolor='#000000')
+            figs.append(fig)
 
     return figs

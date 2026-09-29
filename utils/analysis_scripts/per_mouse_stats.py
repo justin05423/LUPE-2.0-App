@@ -109,9 +109,11 @@ def per_mouse_dir(analysis_dir, group, condition):
     return path
 
 
-def save_per_mouse_csv(df, analysis_dir, group, condition, file_name, suffix=""):
-    """Write one CSV for one mouse. Group/condition/file columns are prepended."""
+def save_per_mouse_csv(df, analysis_dir, group, condition, file_name, suffix="", fps=None):
+    """Write one CSV for one mouse. Group/condition/file columns are prepended; fps_used appended if given."""
     df = df.copy()
+    if fps is not None:
+        df["fps_used"] = float(fps)
     df.insert(0, "file", file_name)
     df.insert(0, "condition", condition)
     df.insert(0, "group", group)
@@ -170,3 +172,54 @@ def save_figure(fig, svg_path, dpi=300, **kwargs):
     fig.savefig(svg_path, format="svg", **kwargs)
     fig.savefig(png_path, format="png", dpi=dpi, **kwargs)
     return svg_path, png_path
+
+
+def panel_grid(selected_groups, selected_conditions, panel_w=4.0, panel_h=3.5, max_cols=4,
+               extra_h=0.0, **subplot_kw):
+    """Axes grid with one panel per (group, condition).
+
+    Columns are balanced: cols = ceil(n_cond / ceil(n_cond / max_cols)), so 5 conditions with
+    max_cols=4 give 3 + 2, 10 give 4 + 4 + 2, and max_cols=1 stacks them vertically. Each group's
+    conditions form their own block of rows; the next group starts on a new row.
+
+    Returns (fig, axes_by_pair, layout) where axes_by_pair = {(group, condition): ax} and
+    layout = {'rows', 'cols', 'row_of', 'col_of'}. Unused axes are turned off.
+    """
+    import math
+    import matplotlib.pyplot as plt
+
+    n_cond = max(1, len(selected_conditions))
+    rows_per_group = max(1, math.ceil(n_cond / max(1, max_cols)))
+    cols = max(1, math.ceil(n_cond / rows_per_group))
+    rows = rows_per_group * max(1, len(selected_groups))
+
+    fig, axes = plt.subplots(rows, cols, figsize=(panel_w * cols, panel_h * rows + extra_h),
+                             constrained_layout=True, **subplot_kw)
+    axes = np.array(axes, dtype=object).reshape(rows, cols)
+
+    axes_by_pair, row_of, col_of = {}, {}, {}
+    used = set()
+    for gi, g in enumerate(selected_groups):
+        for ci, c in enumerate(selected_conditions):
+            r = gi * rows_per_group + ci // cols
+            k = ci % cols
+            axes_by_pair[(g, c)] = axes[r, k]
+            row_of[(g, c)] = r
+            col_of[(g, c)] = k
+            used.add((r, k))
+    for r in range(rows):
+        for k in range(cols):
+            if (r, k) not in used:
+                axes[r, k].axis('off')
+    return fig, axes_by_pair, {'rows': rows, 'cols': cols, 'row_of': row_of, 'col_of': col_of}
+
+
+def group_figures(selected_groups, selected_conditions, **kw):
+    """Yield (group, fig, axes_by_pair, layout): one figure per group, conditions laid out by panel_grid.
+
+    kw is passed to panel_grid. Use max_cols=1 to stack conditions vertically (easy comparison down a
+    column with a shared x-axis); the default balances them in a grid.
+    """
+    for g in selected_groups:
+        fig, axes_by_pair, layout = panel_grid([g], selected_conditions, **kw)
+        yield g, fig, axes_by_pair, layout

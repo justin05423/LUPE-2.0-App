@@ -6,6 +6,7 @@ import platform
 from pathlib import Path
 
 from utils.classification import load_behaviors
+from utils.timing import constant_fps
 from utils.analysis_scripts.per_mouse_stats import (
     save_figure,
     describe, save_per_mouse_csv, save_group_summary
@@ -38,7 +39,7 @@ def _win_long_path(p: Path) -> str:
     else:
         return s
 
-def behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min):
+def behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min, fps_lookup=None):
     """
     Generate a binned-ratio timeline plot and save the results as CSV and SVG files.
 
@@ -73,7 +74,7 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
     behaviors = load_behaviors(str(behaviors_file))
 
     # Parameters
-    time_bin_size = 60 * 60 * int(num_min)
+    fps_lookup = fps_lookup or constant_fps()
 
     # Define the directory path for saving figures and CSVs
     directory_path = base_dir / "figures" / "behavior_binned-ratio-timeline"
@@ -103,6 +104,9 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
                 if len(file_keys) == 0:
                     raise ValueError(f"No files found for group '{selected_group}' condition '{selected_condition}'.")
 
+                # Bin size in frames for this group/condition's frame rate (rounded to whole frames)
+                fps = fps_lookup(selected_group, selected_condition)
+                time_bin_size = int(round(fps * 60 * float(num_min)))
                 n_bins = len(behaviors[selected_group][selected_condition][file_keys[0]]) // time_bin_size
                 if int(n_bins) <= 0:
                     raise ValueError(
@@ -147,7 +151,7 @@ def behavior_binned_ratio_timeline(project_name, selected_groups, selected_condi
                             rec[behavior_names[b]] = describe(pm[behavior_names[b]].values)[stat]
                         summary_rows.append(rec)
                     pm = pd.concat([pm, pd.DataFrame(summary_rows)], ignore_index=True)
-                    save_per_mouse_csv(pm, str(directory_path), selected_group, selected_condition, file_name)
+                    save_per_mouse_csv(pm, str(directory_path), selected_group, selected_condition, file_name, fps=fps)
                     per_mouse_frames.append(pd.DataFrame({
                         'behavior': behavior_names,
                         'mean_bin_ratio': [describe(pm.loc[pm.row_type == 'bin', bn].values)['mean']

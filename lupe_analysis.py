@@ -27,6 +27,7 @@ from utils.analysis_scripts.behavior_timepoint_comparison import behavior_timepo
 from utils.analysis_scripts.behavior_kinematx import behavior_kinematx
 from utils.analysis_scripts.behavior_binned_mouse_screening import behavior_binned_mouse_screening
 from utils.analysis_scripts.behavior_LUPE_AMPS import behavior_LUPE_AMPS
+from utils.timing import timing_widget, timing_summary_line, fps_lookup as make_fps_lookup, write_timing, frame_counts, read_timing
 
 def run_notebook(notebook_path, output_path):
     try:
@@ -355,6 +356,15 @@ def preprocess_workflow():
     features_exist = os.path.exists(features_file)
     behaviors_exist = os.path.exists(behaviors_file)
 
+    # Recording frame rate: set once per project; every time-based metric downstream uses it.
+    st.markdown("### Recording Frame Rate")
+    st.caption("Enter your camera's actual frame rate. If the camera was set by frame interval instead, enter "
+               "1000 / interval in ms (one frame every 16 ms = 62.5 fps). LUPE uses this only to convert frames "
+               "into seconds and minutes (bouts/min, bout durations, minute bins, time windows); it does not "
+               "change how behaviors are classified. Changing it later only requires re-running analyses, not "
+               "preprocessing.")
+    timing_widget(st, project_name, key_prefix="pre_timing", show_save=raw_data_exists)
+
     st.markdown("### Workflow Progress")
     st.markdown(f"**Step 1: Preprocess Data** - {'Completed ✅' if raw_data_exists else 'Pending ⏳... Begin by configuring Groups/Conditions and adding DLC output .csv files.'}")
     st.markdown(f"**Step 2: Extract Features** - {'Completed ✅' if features_exist else 'Pending ⏳'}")
@@ -406,6 +416,9 @@ def preprocess_workflow():
                                         fname = str(uf)
                                     f.write(f"    - {fname}\n")
                     st.info(f"Project metadata file saved: {meta_path}")
+                    # Record the frame rate entered above (defaults to 60) now that files exist
+                    write_timing(project_name, float(st.session_state.get("pre_timing_default_fps", 60.0)),
+                                 {}, frame_counts=frame_counts(project_name))
                 except Exception as meta_e:
                     st.warning(f"Could not write project metadata file: {meta_e}")
                 st.success(f"Step 1 completed! Data saved at {processed_file_path}")
@@ -470,6 +483,11 @@ def analysis_workflow():
         key="general_conditions"
     )
 
+    st.caption(f"Recording frame rate for this project: **{timing_summary_line(project_name)}** "
+               f"(saved in project_info_{project_name}.txt)")
+    with st.expander("Edit recording frame rate"):
+        timing_widget(st, project_name, key_prefix="ana_timing")
+
     # Analysis selection
     analysis_type = st.radio(
         "Select Analysis:",
@@ -515,7 +533,7 @@ def analysis_workflow():
             "plus summary_across_mice_<group>-<condition>.csv."
         ),
         "Behavior Bout Durations": (
-            "Parses contiguous behavior bouts, converts their lengths to seconds (60 fps), and plots per-bout duration distributions as horizontal boxplots "
+            "Parses contiguous behavior bouts, converts their lengths to seconds (project frame rate), and plots per-bout duration distributions as horizontal boxplots "
             "per group–condition with one dot per mouse (median bout duration) overlaid; the x-axis is shared and scaled to the largest whisker. A log-scale copy is saved to log_scale/. "
             "A companion bar chart shows mean bout duration (mean ± SEM across mice). Both saved as SVG + PNG with a CSV of all bouts. "
             "Per mouse: bout-duration descriptives (n, mean, SD, SEM, median, min, max, total) per behavior in per_mouse/, "
@@ -693,12 +711,15 @@ def analysis_workflow():
             heatmap_max = None
 
     if st.button("Run Analysis"):
+        fps_lookup = make_fps_lookup(project_name)
         with st.spinner("Running analysis..."):
             try:
                 if analysis_type == "Behavior Binned-Ratio Timeline":
-                    figs = behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min)
+                    figs = behavior_binned_ratio_timeline(project_name, selected_groups, selected_conditions, num_min,
+                                                          fps_lookup=fps_lookup)
                 elif analysis_type == "Distance Traveled Heatmaps":
-                    figs = behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions)
+                    figs = behavior_distance_traveled_heatmaps(project_name, selected_groups, selected_conditions,
+                                                               fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Location":
                     figs = behavior_location(project_name, selected_groups, selected_conditions,
                                              per_animal_images=per_animal_images)
@@ -706,27 +727,28 @@ def analysis_workflow():
                     figs = behavior_transitions(project_name, selected_groups, selected_conditions,
                                                 per_animal_images=per_animal_transitions)
                 elif analysis_type == "Behavior CSV Classification":
-                    behavior_csv_classification(project_name)
+                    behavior_csv_classification(project_name, fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Bout Counts":
-                    fig = behavior_bout_counts(project_name, selected_groups, selected_conditions)
+                    figs = behavior_bout_counts(project_name, selected_groups, selected_conditions, fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Bout Durations":
-                    figs = behavior_bout_durations(project_name, selected_groups, selected_conditions)
+                    figs = behavior_bout_durations(project_name, selected_groups, selected_conditions, fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Total Frames":
-                    fig = behavior_total_frames(project_name, selected_groups, selected_conditions)
+                    figs = behavior_total_frames(project_name, selected_groups, selected_conditions, fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Timepoint Comparison":
                     # Ensure we have valid, parsed time ranges before running
                     num_timepoints = st.session_state.get("timepoint_number", 0)
                     if not time_ranges or len(time_ranges) != num_timepoints:
                         st.error("Please enter all time ranges in 'start-end' format (e.g., 0-10, 11-30) before running.")
                     else:
-                        behavior_timepoint_comparison(project_name, selected_groups, selected_conditions, time_ranges)
+                        behavior_timepoint_comparison(project_name, selected_groups, selected_conditions, time_ranges,
+                                                      fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Kinematx":
-                    fig = behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects)
+                    fig = behavior_kinematx(project_name, selected_group, selected_conditions, bp_selects, fps_lookup=fps_lookup)
                 elif analysis_type == "Behavior Binned Mouse Screening":
                     heatmap_files = behavior_binned_mouse_screening(
                         project_name, heatmap_max_value=heatmap_max,
                         selected_groups=selected_groups, selected_conditions=selected_conditions,
-                        label_max_chars=int(label_max_chars))
+                        label_max_chars=int(label_max_chars), fps_lookup=fps_lookup)
                     # Keep results so the viewer below survives selectbox reruns
                     st.session_state["screening_heatmap_files"] = heatmap_files
             except Exception as e:
@@ -737,8 +759,6 @@ def analysis_workflow():
 
         # Display the resulting figure(s)
         if analysis_type in [
-            "Behavior Bout Counts",
-            "Behavior Total Frames",
             "Behavior Kinematx"
         ]:
             st.pyplot(fig)
@@ -747,7 +767,9 @@ def analysis_workflow():
             "Distance Traveled Heatmaps",
             "Behavior Location",
             "Behavior Transitions",
-            "Behavior Bout Durations"
+            "Behavior Bout Durations",
+            "Behavior Bout Counts",
+            "Behavior Total Frames"
         ]:
             for f in figs:
                 st.pyplot(f)
@@ -766,9 +788,12 @@ def analysis_workflow():
             st.markdown(f"**{behavior_name[0].upper() + behavior_name[1:]}** ({view_group} / {view_condition})")
             if os.path.exists(png_path):
                 try:
-                    st.image(png_path, use_container_width=True)
-                except TypeError:  # older Streamlit
-                    st.image(png_path, use_column_width=True)
+                    st.image(png_path, width="stretch")          # Streamlit >= 1.49
+                except Exception:
+                    try:
+                        st.image(png_path, use_container_width=True)  # 1.40 to 1.48
+                    except TypeError:
+                        st.image(png_path, use_column_width=True)     # older
             else:
                 with open(svg_path, "r") as f:
                     st.components.v1.html(f.read(), height=600, scrolling=True)
@@ -916,7 +941,13 @@ The model is specifically trained to analyze localized hindpaw injuries. It leve
 
     # Try to infer recording length (minutes) from the first readable behavior CSV
     # (assumes 1 row = 1 frame at 60 fps in raw-classification CSVs).
-    sampling_rate_fps = 60.0
+    _timing = read_timing(project_name)
+    sampling_rate_fps = float(_timing["default_fps"])
+    _ovr = {(g, c): v for (g, c), v in _timing["overrides"].items() if g in selected_groups and c in selected_conditions}
+    if _ovr:
+        st.warning(f"Selected groups/conditions have different frame rates ({', '.join(f'{g}/{c}: {v:g}' for (g, c), v in _ovr.items())}). "
+                   f"LUPE-AMPS pools them at the project default of {sampling_rate_fps:g} fps.")
+    st.caption(f"LUPE-AMPS sampling rate: {sampling_rate_fps:g} fps (from project_info_{project_name}.txt)")
     recording_length_min_available = None
 
     try:
@@ -1061,6 +1092,7 @@ The model is specifically trained to analyze localized hindpaw injuries. It leve
                         time_labels=time_labels,
                         model_path=str(amps_centroids_path),
                         pca_model_path=str(amps_pca_params_path),
+                        sampling_rate=sampling_rate_fps,
                     )
                 except TypeError:
                     # Backward-compatible: older versions of behavior_LUPE_AMPS may not accept these kwargs
