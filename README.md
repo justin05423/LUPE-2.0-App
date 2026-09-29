@@ -34,6 +34,7 @@ If you use LUPE in your research, please cite this work.
   - [One-Click App Launch (Recommended)](#-one-click-app-launch-recommended)
 - [Updating App](#updating-lupe-app)
 - [App Guide](#app-guide)
+- [Pose Estimation: LUPE 2.0 DeepLabCut Model + GUIs](#pose-estimation-lupe-20-deeplabcut-model--guis)
 - [Physical System Build](#physical-system-build)
 - [Contacting](#contacting)
 
@@ -102,7 +103,7 @@ Set the true rate on the **Preprocessing Workflow** tab under **Recording Frame 
    - Download from 👉 [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0)
    - Move the contents into the `Model/` folder inside `LUPE-2.0-App` 
 
-     > **Note**: For analyzing and retrieving pose estimation for LUPE video data, find the LUPE 2.0 DLC Model [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3).
+     > **Note**: The App takes DeepLabCut pose CSVs as input. To produce those from your LUPE videos, download the LUPE 2.0 DLC Model and GUIs [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) and follow the [Pose Estimation](#pose-estimation-lupe-20-deeplabcut-model--guis) section below.
 
 4. **Create the Conda Environment**
    - Make sure [Anaconda](https://www.anaconda.com/products/distribution) is installed.
@@ -203,6 +204,19 @@ To update your local copy of LUPE-2.0-App to the latest version, follow these st
 # App Guide
 
 For a detailed walkthrough on using the LUPE 2.0 App, check out the [App Walkthrough](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-App-Walkthrough--%F0%9F%9A%80).
+
+---
+
+# Pose Estimation: LUPE 2.0 DeepLabCut Model + GUIs
+
+Before the App can classify behavior, each LUPE video needs pose estimation with the **LUPE 2.0 DeepLabCut model** (20 body points). The model ships in two versions, **TensorFlow** and **PyTorch**, trained on the same labeled frames; PyTorch is recommended for new installs and required for RTX 50-series GPUs. Two GUIs run the model with the validated settings so you do not have to set them by hand:
+
+- **LUPE Single-Animal**: standard LUPE Box recordings, one mouse per video
+- **LUPE Multi-Chamber**: four-chamber recordings, cropped and analyzed with the same model
+
+📥 Model and GUIs: [Download from Box](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3)
+
+For the model breakdown (training data, body points, TensorFlow vs PyTorch accuracy), GPU compatibility, DeepLabCut setup and a step-by-step guide to both GUIs, see the [LUPE 2.0 DeepLabCut Model and GUIs 🐭](https://github.com/justin05423/LUPE-2.0-App/wiki/LUPE-2.0-DeepLabCut-Model-and-GUIs-%F0%9F%90%AD) wiki page.
 
 ---
 
