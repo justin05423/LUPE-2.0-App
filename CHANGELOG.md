@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-09-29
+
+### Added
+- README: "Pose Estimation: LUPE 2.0 DeepLabCut Model + GUIs" section and Table of Contents entry, linking the
+  Box download and the new wiki page. The install-step note now points there too.
+- `images/dlc/`: pipeline overview, model-creation figure, 20-body-point legend and video-to-AMPS workflow figure used by the wiki pages.
+- Wiki: "LUPE 2.0 DeepLabCut Model and GUIs" page (model breakdown, TensorFlow vs PyTorch, GPU compatibility,
+  DeepLabCut setup, LUPE Single-Animal and Multi-Chamber GUI guide, troubleshooting, references).
+
+### Changed
+- Wiki Home: "Start Here" row for pose estimation; App Walkthrough: 60 fps wording replaced with the per-project
+  Recording Frame Rate introduced in 2.2.0.
+
 ## [2.2.0] - 2026-09-28
 
 ### Added
