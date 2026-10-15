@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+### Added
+- LUPE-AMPS Section 2 behavior statistics CSVs (and the timepoint comparison CSV) now include `n_frames`,
+  `duration_min` and `bouts_per_min` for each animal.
+
+### Fixed
+- LUPE-AMPS Section 2 (`FractionTime`, `NumBouts`, `MeanDuration_s`) is computed over each animal's full recording,
+  as in the original MATLAB, instead of averaging 5-min bins. Recordings that were not a whole number of 5-min bins
+  (e.g. 31.25 min at 60 fps) gave a partial last bin equal weight, and at 62.5 fps a 1-frame last bin pulled every
+  `FractionTime` down to 6/7 of its value. Bouts are no longer split at bin boundaries.
+- LUPE-AMPS Sections 2 and 2b use each animal's own frames instead of zero-padding to the longest file
+  (padded frames counted as Still). The state model (Sections 4-9) is unchanged.
+
+### Removed
+- `bin_length_min` parameter of `behavior_LUPE_AMPS` (no longer used).
+
 ## [2.2.1] - 2026-09-29
 
 ### Added
