@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+### Removed
+- Behavior Kinematx no longer loads the classifier model or `binned_features_<project>.pkl`; neither was used.
+  Outputs are unchanged, and the features file no longer needs to be present.
+
 ## [2.2.1] - 2026-09-29
 
 ### Added
