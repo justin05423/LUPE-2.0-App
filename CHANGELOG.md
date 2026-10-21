@@ -19,6 +19,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - LUPE-AMPS bouts already running at the first frame or still running at the last frame are counted, with durations
   censored at the recording edge. They were dropped before, and a behavior or state whose only bout touched an edge
   got `FractionTime` 0.
+- LUPE-AMPS state model (Sections 4-9) no longer treats a shorter recording's padded frames as Still. Windows that
+  reach into padded frames get state 0 (no data) and are left out of state fractions, transitions, bouts, timepoint
+  windows, model fit and the AMPS score, so a short recording is scored on its own frames only. A warning lists any
+  file shorter than the longest. Timepoint CSVs skip an animal whose recording ends before the window (Section 2b
+  wrote NaN rows before).
 
 ### Removed
 - `bin_length_min` parameter of `behavior_LUPE_AMPS` (no longer used).
