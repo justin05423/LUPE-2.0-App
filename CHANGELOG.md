@@ -16,6 +16,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   `FractionTime` down to 6/7 of its value. Bouts are no longer split at bin boundaries.
 - LUPE-AMPS Sections 2 and 2b use each animal's own frames instead of zero-padding to the longest file
   (padded frames counted as Still). The state model (Sections 4-9) is unchanged.
+- LUPE-AMPS bouts already running at the first frame or still running at the last frame are counted, with durations
+  censored at the recording edge. They were dropped before, and a behavior or state whose only bout touched an edge
+  got `FractionTime` 0.
 
 ### Removed
 - `bin_length_min` parameter of `behavior_LUPE_AMPS` (no longer used).
