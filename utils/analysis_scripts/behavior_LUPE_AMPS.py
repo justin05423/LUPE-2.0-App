@@ -67,7 +67,7 @@ def calculate_behavior_statistics(
 
                     if len(bout_starts) > 0 and len(bout_ends) > 0:
                         n_valid = min(len(bout_starts), len(bout_ends))
-                        durations = (bout_ends[:n_valid] - bout_starts[:n_valid]) / sampling_rate
+                        durations = (bout_ends[:n_valid] - bout_starts[:n_valid] + 1) / sampling_rate
 
                         fraction_time[k, b] = np.mean(binary_data)
                         n_bouts[k, b] = float(len(bout_starts))
