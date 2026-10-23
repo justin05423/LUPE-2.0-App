@@ -18,3 +18,8 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# Model files, downloaded from the GitHub release on first launch (see utils/model_download.py)
+model/model.pkl
+model/model_portable.npz
+model/*.part

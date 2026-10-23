@@ -28,6 +28,7 @@ from utils.analysis_scripts.behavior_kinematx import behavior_kinematx
 from utils.analysis_scripts.behavior_binned_mouse_screening import behavior_binned_mouse_screening
 from utils.analysis_scripts.behavior_LUPE_AMPS import behavior_LUPE_AMPS
 from utils.timing import timing_widget, timing_summary_line, fps_lookup as make_fps_lookup, write_timing, frame_counts, read_timing
+from utils.model_download import ensure_model_file, is_lfs_pointer, model_url
 
 def run_notebook(notebook_path, output_path):
     try:
@@ -160,12 +161,40 @@ with st.sidebar:
     if "classifier" not in st.session_state:
         model_dir = HERE / "model"
 
+        # First launch (or a leftover Git LFS pointer): download model.pkl from the GitHub release
+        progress_bar = []
+
+        def _download_progress(done, total):
+            if not progress_bar:
+                progress_bar.append(st.progress(0.0))
+                progress_bar.append(-1)
+            pct = int(100 * done / total)
+            if pct == progress_bar[1]:
+                return
+            progress_bar[1] = pct
+            progress_bar[0].progress(
+                min(done / total, 1.0),
+                text=f"Downloading the LUPE model (first launch only): {done / 1e6:.0f} / {total / 1e6:.0f} MB",
+            )
+
+        try:
+            _, model_status = ensure_model_file("model.pkl", str(model_dir), progress=_download_progress)
+            if progress_bar:
+                progress_bar[0].empty()
+            if model_status == "mismatch":
+                st.warning(
+                    "model/model.pkl does not match the released LUPE model (sha256 differs). "
+                    "Using it as is; delete it and restart the app to download the released model."
+                )
+        except Exception as e:
+            st.error(f"Could not download the LUPE model: {e}. Download model.pkl from {model_url('model.pkl')} into the 'model' folder.")
+
         candidate_names = ["model.pkl", "model"]
 
         classifier_model_path = None
         for name in candidate_names:
             p = model_dir / name
-            if p.exists():
+            if p.exists() and not is_lfs_pointer(p):
                 classifier_model_path = p
                 break
 
