@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 if not os.path.join(os.path.abspath(''), '..') in sys.path:
     sys.path.append(os.path.join(os.path.abspath(''), '..'))
 
-from utils.classification import load_model, load_features, load_data, weighted_smoothing, load_behaviors
+from utils.classification import load_data, weighted_smoothing, load_behaviors
 from utils.feature_utils import get_avg_kinematics
 from utils.meta import keypoints, behavior_names
 from utils.timing import constant_fps
@@ -40,14 +40,10 @@ def behavior_kinematx(project_name, selected_group, selected_conditions, bp_sele
     """
     fps_lookup = fps_lookup or constant_fps()
     base_dir = os.path.join(".", "LUPEAPP_processed_dataset", project_name)
-    model_path = os.path.join("model", "model.pkl")
     data_path = os.path.join(base_dir, f"raw_data_{project_name}.pkl")
-    features_path = os.path.join(base_dir, f"binned_features_{project_name}.pkl")
     behaviors_path = os.path.join(base_dir, f"behaviors_{project_name}.pkl")
 
-    model = load_model(model_path)
     poses = load_data(data_path)
-    features = load_features(features_path)
     behaviors = load_behaviors(behaviors_path)
 
     figure_dir = os.path.join(base_dir, "figures", "behavior_kinematx")

@@ -19,6 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - LUPE-AMPS bouts already running at the first frame or still running at the last frame are counted, with durations
   censored at the recording edge. They were dropped before, and a behavior or state whose only bout touched an edge
   got `FractionTime` 0.
+
 - LUPE-AMPS state model (Sections 4-9) no longer treats a shorter recording's padded frames as Still. Windows that
   reach into padded frames get state 0 (no data) and are left out of state fractions, transitions, bouts, timepoint
   windows, model fit and the AMPS score, so a short recording is scored on its own frames only. A warning lists any
@@ -28,7 +29,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   jitter does not trigger the warning or the masking. State fractions sum to slightly under 1 by design: the final
   partial window is never covered, matching the MATLAB implementation.
 
+- LUPE-AMPS `FractionTime` (behaviors) and state fraction are computed for every class, as in MATLAB, instead of only
+  when a bout of at least `min_frames` exists.
+- LUPE-AMPS bout durations count the inclusive first and last frame (`end - start + 1`), matching MATLAB and the
+  Bout Durations analysis. Every `MeanDuration_s` was one frame short before (a 12-frame bout read 0.183 s, not 0.200 s).
+
 ### Removed
+- Behavior Kinematx no longer loads the classifier model or `binned_features_<project>.pkl`; neither was used.
+  Outputs are unchanged, and the features file no longer needs to be present.
 - `bin_length_min` parameter of `behavior_LUPE_AMPS` (no longer used).
 
 ## [2.2.1] - 2026-09-29
