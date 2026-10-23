@@ -5,9 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+### Added
+- LUPE-AMPS Section 2 behavior statistics CSVs (and the timepoint comparison CSV) now include `n_frames`,
+  `duration_min` and `bouts_per_min` for each animal.
+
+### Fixed
+- LUPE-AMPS Section 2 (`FractionTime`, `NumBouts`, `MeanDuration_s`) is computed over each animal's full recording,
+  as in the original MATLAB, instead of averaging 5-min bins. Recordings that were not a whole number of 5-min bins
+  (e.g. 31.25 min at 60 fps) gave a partial last bin equal weight, and at 62.5 fps a 1-frame last bin pulled every
+  `FractionTime` down to 6/7 of its value. Bouts are no longer split at bin boundaries.
+- LUPE-AMPS Sections 2 and 2b use each animal's own frames instead of zero-padding to the longest file
+  (padded frames counted as Still). The state model (Sections 4-9) is unchanged.
+- LUPE-AMPS bouts already running at the first frame or still running at the last frame are counted, with durations
+  censored at the recording edge. They were dropped before, and a behavior or state whose only bout touched an edge
+  got `FractionTime` 0.
+- LUPE-AMPS `FractionTime` (behaviors) and state fraction are computed for every class, as in MATLAB, instead of only
+  when a bout of at least `min_frames` exists.
+- LUPE-AMPS bout durations count the inclusive first and last frame (`end - start + 1`), matching MATLAB and the
+  Bout Durations analysis. Every `MeanDuration_s` was one frame short before (a 12-frame bout read 0.183 s, not 0.200 s).
+
 ### Removed
 - Behavior Kinematx no longer loads the classifier model or `binned_features_<project>.pkl`; neither was used.
   Outputs are unchanged, and the features file no longer needs to be present.
+- `bin_length_min` parameter of `behavior_LUPE_AMPS` (no longer used).
 
 ## [2.2.1] - 2026-09-29
 
