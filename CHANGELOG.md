@@ -19,6 +19,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - LUPE-AMPS bouts already running at the first frame or still running at the last frame are counted, with durations
   censored at the recording edge. They were dropped before, and a behavior or state whose only bout touched an edge
   got `FractionTime` 0.
+
+- LUPE-AMPS state model (Sections 4-9) no longer treats a shorter recording's padded frames as Still. Windows that
+  reach into padded frames get state 0 (no data) and are left out of state fractions, transitions, bouts, timepoint
+  windows, model fit and the AMPS score, so a short recording is scored on its own frames only. A warning lists any
+  file shorter than the longest. Timepoint CSVs skip an animal whose recording ends before the window (Section 2b
+  wrote NaN rows before).
+- Files within short_file_tolerance_sec (default 1 s) of the longest are treated as full length, so normal recording
+  jitter does not trigger the warning or the masking. State fractions sum to slightly under 1 by design: the final
+  partial window is never covered, matching the MATLAB implementation.
+
 - LUPE-AMPS `FractionTime` (behaviors) and state fraction are computed for every class, as in MATLAB, instead of only
   when a bout of at least `min_frames` exists.
 - LUPE-AMPS bout durations count the inclusive first and last frame (`end - start + 1`), matching MATLAB and the
