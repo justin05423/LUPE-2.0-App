@@ -99,9 +99,10 @@ Set the true rate on the **Preprocessing Workflow** tab under **Recording Frame 
    cd LUPE-2.0-App
    ```
 
-3. **Download the LUPE 2.0 A-SOiD Model** (If the model is **not already present** in the `Model/` folder) 
-   - Download from 👉 [HERE](https://upenn.box.com/s/9rfslrvcc7m6fji8bmgktnegghyu88b0)
-   - Move the contents into the `Model/` folder inside `LUPE-2.0-App` 
+3. **LUPE 2.0 A-SOiD Model** (downloads automatically)
+   - Nothing to do here: the first time you launch the app, it downloads the model (`model/model.pkl`, 308 MB) from the
+     [LUPE-2.0-App v2.3.0 release](https://github.com/justin05423/LUPE-2.0-App/releases/tag/v2.3.0) and checks it against its sha256. This needs an internet connection once.
+   - No internet on the analysis computer? Download `model.pkl` from that release page yourself and put it in the `model/` folder inside `LUPE-2.0-App`.
 
      > **Note**: The App takes DeepLabCut pose CSVs as input. To produce those from your LUPE videos, download the LUPE 2.0 DLC Model and GUIs [HERE](https://upenn.box.com/s/av3i14c64rj6zls9lz6pda0it5b5q7f3) and follow the [Pose Estimation](#pose-estimation-lupe-20-deeplabcut-model--guis) section below.
 
@@ -176,9 +177,9 @@ To update your local copy of LUPE-2.0-App to the latest version, follow these st
 ```bash
    git pull --ff-only origin main
 ```
-   This keeps your local files that the app modifies (`model/model.pkl` and `utils/meta.py`) intact. Your processed data in `LUPEAPP_processed_dataset/` is never touched by updates.
+   This keeps your local `utils/meta.py` (which the app modifies) intact. The model (`model/model.pkl`) is not part of the repository, so updates never touch it. Your processed data in `LUPEAPP_processed_dataset/` is never touched by updates.
 
-   If git refuses with a message like `error: Your local changes to the following files would be overwritten`, an update changed one of those files. Back them up, force the update, then restore the model:
+   If git refuses with a message like `error: Your local changes to the following files would be overwritten`, an update changed one of those files. This also happens once on the first update from a version before 2.3.0, which still tracked `model/model.pkl`. Back them up, force the update, then restore the model (or skip the model lines and the app re-downloads it):
 ```bash
    cp model/model.pkl ../model_backup.pkl
    cp utils/meta.py ../meta_backup.py
@@ -197,7 +198,7 @@ To update your local copy of LUPE-2.0-App to the latest version, follow these st
 ```
 4. Restart your environment and run the app as usual.
 
-> **Check after updating:** `model/model.pkl` should be much larger than a few hundred bytes. If it is tiny, it has been replaced by a placeholder; re-download the model from the link in the installation steps above and replace the file.
+> **Model check:** if `model/model.pkl` is missing or is a few-hundred-byte placeholder (a Git LFS pointer from an older version), the app downloads the real model on its next launch. If it differs from the released model, the app shows a warning in the sidebar; delete the file and restart the app to download the released one.
 
 ---
 
