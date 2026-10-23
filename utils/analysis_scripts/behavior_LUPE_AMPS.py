@@ -917,7 +917,7 @@ def behavior_LUPE_AMPS(
     # Section 2: DATA LOADING AND BEHAVIOR STATISTICS
     tolerance_frames = int(round(float(short_file_tolerance_sec) * float(sampling_rate)))
     behavior_matrix, animal_names, group_labels, condition_labels, expected_length, behavior_vectors, valid_frames = load_lupe_data(
-        base_data_dir, selected_groups, selected_conditions
+        base_data_dir, selected_groups, selected_conditions, tolerance_frames=tolerance_frames
     )
 
     # Section 4: PREPROCESSING - DOWNSAMPLING
