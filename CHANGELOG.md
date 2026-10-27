@@ -5,6 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-27
+
 ### Added
 - The classifier model (`model/model.pkl`) downloads automatically from the LUPE-2.0-App GitHub release (v2.3.0) on
   the first launch of the app, with a progress bar, and is checked against its sha256 before it is used. A model.pkl
