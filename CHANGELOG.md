@@ -5,7 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-27
+
 ### Added
+- The classifier model (`model/model.pkl`) downloads automatically from the LUPE-2.0-App GitHub release (v2.3.0) on
+  the first launch of the app, with a progress bar, and is checked against its sha256 before it is used. A model.pkl
+  that is already present is never overwritten; if it differs from the released model the app shows a warning.
+  The download code is in `utils/model_download.py` (shared with the notebook package).
 - LUPE-AMPS Section 2 behavior statistics CSVs (and the timepoint comparison CSV) now include `n_frames`,
   `duration_min` and `bouts_per_min` for each animal.
 
@@ -35,6 +41,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   Bout Durations analysis. Every `MeanDuration_s` was one frame short before (a 12-frame bout read 0.183 s, not 0.200 s).
 
 ### Removed
+- `model/model.pkl` is no longer tracked in the repository. The tracked file was a Git LFS pointer whose LFS object
+  is gone, so clones got a 134-byte placeholder instead of the model. `model/model.pkl` is now in `.gitignore`.
 - Behavior Kinematx no longer loads the classifier model or `binned_features_<project>.pkl`; neither was used.
   Outputs are unchanged, and the features file no longer needs to be present.
 - `bin_length_min` parameter of `behavior_LUPE_AMPS` (no longer used).
